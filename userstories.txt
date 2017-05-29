@@ -1,0 +1,13 @@
+User Stories:
+
+1: Jess logs into Preppy through safari browser on iPhone.
+
+2: Jess wants to set activity monitor for keyword {Cashew, Toboggan}.
+
+3: Jess waits for N weeks. S.I.[4]:[[ Server makes one request per hour to look for some measure of occurrence of this term. Server stores the geographic coordinate of the each unique tweet containing this word. ]]
+
+4: Jess checks back in a few weeks to see how many occurrences of this tweet word had been observed.
+
+5: She plots estimated density of tweeting on a geographical interface depicting the political boundaries of the areas of interest.
+
+6: She can test arbitrary hypotheses.
