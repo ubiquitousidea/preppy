@@ -9,8 +9,6 @@ the language because of the Tornado and Scikit-Learn pacakges.
 """
 
 
-import json
-from twitter.api import Api
 from misc import get_api, write_json, write_tweet_list
 
 
@@ -21,4 +19,4 @@ search1 = {"term": ["Truvada"],
 
 api = get_api()
 tweetlist = api.GetSearch(**search1)
-write_tweet_list(tweetlist, "tweets_02.json")
+write_tweet_list(tweetlist, "tweets_03.json")

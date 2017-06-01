@@ -39,10 +39,29 @@ def write_tweet_list(tweetlist, fname=None):
     """
     try:
         fname = fname if fname else 'tweets.json'
-        tweetlist = [tweet.AsDict() for tweet in tweetlist]
+        tweetlist = [anonymize(tweet) for tweet in tweetlist]
         write_json({"TWEETS": tweetlist}, fname)
     except:
         raise ValueError("Unable to write tweet list to json file")
+
+
+def anonymize(tweet):
+    """
+    Remove user id from tweet dictionary to comply with
+        user agreement that no use data is cached with
+        location data.
+    :param tweet: dictionary or twitter.models.Status
+    :return: dictionary...
+    """
+
+    if isinstance(tweet, Status):
+        tweet = tweet.AsDict()
+        del tweet["user"]
+    elif isinstance(tweet, dict):
+        del tweet["user"]
+    else:
+        raise TypeError("Argument must be dict or Status type")
+    return tweet
 
 
 def unique_keys(_list):
