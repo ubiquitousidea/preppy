@@ -11,11 +11,7 @@ def get_api():
     """
     with open("./config.json", "r") as f:
         config = json.load(f)
-    a = config["A"]
-    b = config["B"]
-    c = config["C"]
-    d = config["D"]
-    return Api(a, b, c, d)
+    return Api(**config)
 
 
 def write_json(_dict, fn):
@@ -33,6 +29,22 @@ def write_json(_dict, fn):
             )
         )
 
+
+def write_tweet_list(tweetlist, fname=None):
+    """
+    Write out a list of tweets
+    :param tweetlist: list of twitter.models.Status objects
+    :param fname: file name of the tweet list file
+    :return: NoneType
+    """
+    try:
+        fname = fname if fname else 'tweets.json'
+        tweetlist = [tweet.AsDict() for tweet in tweetlist]
+        write_json({"TWEETS": tweetlist}, fname)
+    except:
+        raise ValueError("Unable to write tweet list to json file")
+
+
 def unique_keys(_list):
     """
     Return the unique keys in dictionaries
@@ -40,3 +52,7 @@ def unique_keys(_list):
     :param _list: list of dictionaries
     :return: dict_keys object
     """
+    ukeys = set()
+    for item in _list:
+        ukeys.update(item.keys())
+    return sorted(list(ukeys))

@@ -11,8 +11,7 @@ the language because of the Tornado and Scikit-Learn pacakges.
 
 import json
 from twitter.api import Api
-from twitter.models import Status
-from misc import get_api, write_json
+from misc import get_api, write_json, write_tweet_list
 
 
 search1 = {"term": ["Truvada"],
@@ -21,6 +20,5 @@ search1 = {"term": ["Truvada"],
            "lang": "en"}
 
 api = get_api()
-tweetlist = [tweet.AsDict() for tweet in api.GetSearch(**search1)]
-
-write_json({"TWEETS": tweetlist}, "tweets.json")
+tweetlist = api.GetSearch(**search1)
+write_tweet_list(tweetlist, "tweets_02.json")
