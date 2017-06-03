@@ -51,17 +51,15 @@ def anonymize(tweet):
         user agreement that no use data is cached with
         location data.
     :param tweet: dictionary or twitter.models.Status
-    :return: dictionary...
+    :return: twitter.models.Status instance
     """
-
     if isinstance(tweet, Status):
         tweet = tweet.AsDict()
+    try:
         del tweet["user"]
-    elif isinstance(tweet, dict):
-        del tweet["user"]
-    else:
-        raise TypeError("Argument must be dict or Status type")
-    return tweet
+    except KeyError:
+        pass
+    return Status(**tweet)
 
 
 def unique_keys(_list):
