@@ -1,6 +1,8 @@
 from twitter.api import Api
 from twitter.models import Status
 import json
+import os
+import shutil
 
 
 def get_api(auth=True):
@@ -27,13 +29,37 @@ def write_json(_dict, fn, pretty=True):
     :param str fn: file name to be written
     :return: NoneType
     """
-
     kwargs = {"indent": 4,
               "sort_keys": True} if pretty else {}
-
-    with open(fn, "w") as fh:
+    fn_tmp = temp_file_name(fn)
+    with open(fn_tmp, "w") as fh:
         output = json.dumps(_dict, **kwargs)
         fh.write(output)
+    shutil.move(fn_tmp, fn)
+    os.remove(fn_tmp)
+
+
+def temp_file_name(_fn):
+    """
+    Make a file name into a temp file name
+    :param str _fn: file name
+    :return: str
+    """
+    root, ext = os.path.splitext(_fn)
+    return root + '.tmp'
+
+
+def read_json(fn=None):
+    """
+    Read json file and return a dictionary
+    :param fn: file name string
+    :return: dict
+    """
+    if not fn:
+        return None
+    with open(fn, "r") as fh:
+        d = json.load(fh)
+    return d
 
 
 def write_tweet_list(tweetlist, fname=None):
