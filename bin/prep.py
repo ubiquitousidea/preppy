@@ -9,7 +9,7 @@ the language because of the Tornado and Scikit-Learn pacakges.
 """
 
 
-from misc import get_api, write_json, write_tweet_list, anonymize
+from .misc import get_api, anonymize
 from twitter.models import Status
 import json
 
@@ -108,6 +108,7 @@ class Preppy(object):
         self.tweets = TweetList(tweets)  # Container for storing anonymized tweets
         self.term_list = []  # List of search terms, each one defining one 'search'
         self.search_history = []  # list of search dictionaries used
+        self.api = get_api(auth=False)
 
     def set_term(self, term):
         """
@@ -133,14 +134,17 @@ class Preppy(object):
         queries = self.generate_queries(100)
         self.execute_queries(queries)
 
-        search1 = {"term": ["Truvada"],
-                   "since": "2014-01-01",
-                   "count": 100,
-                   "lang": "en"}
 
-        api = get_api()
-        tweetlist = api.GetSearch(**search1)
-        self.tweets.add_tweets(tweetlist)
+
+    def execute_queries(self, query_list):
+        """
+        Call Twitter Search API repeatedly
+        :param query_list: list of dictionaries
+        :return: NoneType
+        """
+        for q in query_list:
+            tweetlist = self.api.GetSearch(**q)
+            self.tweets.add_tweets(tweetlist)
 
 
 

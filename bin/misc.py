@@ -3,31 +3,37 @@ from twitter.models import Status
 import json
 
 
-def get_api():
+def get_api(auth=True):
     """
     Instantiate a twitter.api.Api object
         from python-twitter package.
+    :param BoolType auth: whether or not to
+        authenticate using credentials
+        stored in config.json
     :return: twitter.api.Api
     """
-    with open("./config.json", "r") as f:
-        config = json.load(f)
+    if auth:
+        with open("./config.json", "r") as f:
+            config = json.load(f)
+    else:
+        config = {}
     return Api(**config)
 
 
-def write_json(_dict, fn):
+def write_json(_dict, fn, pretty=True):
     """
     Write a dictionary to a file
     :param dict _dict: dictionary of interest
     :param str fn: file name to be written
     :return: NoneType
     """
+
+    kwargs = {"indent": 4,
+              "sort_keys": True} if pretty else {}
+
     with open(fn, "w") as fh:
-        fh.write(
-            json.dumps(
-                _dict, indent=4,
-                sort_keys=True
-            )
-        )
+        output = json.dumps(_dict, **kwargs)
+        fh.write(output)
 
 
 def write_tweet_list(tweetlist, fname=None):
@@ -55,10 +61,15 @@ def anonymize(tweet):
     """
     if isinstance(tweet, Status):
         tweet = tweet.AsDict()
-    try:
-        del tweet["user"]
-    except KeyError:
-        pass
+    assert isinstance(tweet, dict)
+    items = ("user",
+             "retweeted_status",
+             "user_mentions",
+             "in_reply_to_screen_name",
+             "in_reply_to_user_id")
+    for item in items:
+        if item in tweet:
+            del tweet[item]
     return Status(**tweet)
 
 
@@ -71,5 +82,6 @@ def unique_keys(_list):
     """
     ukeys = set()
     for item in _list:
-        ukeys.update(item.keys())
+        some_keys = set(item.keys())
+        ukeys.update(some_keys)
     return sorted(list(ukeys))
