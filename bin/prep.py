@@ -9,9 +9,8 @@ the language because of the Tornado and Scikit-Learn pacakges.
 """
 
 import datetime
-from .misc import get_api, anonymize, \
-    read_json, write_json, DATE_FORMAT, \
-    minidate
+from misc import get_api, anonymize, \
+    read_json, write_json, minidate
 from twitter.models import Status
 
 
@@ -36,9 +35,8 @@ class TweetList(object):
     def __dict__(self):
         """
         Property to return json representation of this class
-        The self.tweets dict is a dict of <twitter.models.Status> objects
-        This method converts them to dictionaries (json)
-
+        The self.tweets is a dict of <twitter.models.Status> objects
+        This method converts the Status objects to dictionaries
         :return: dict of dict representations of tweets (Statuses)
         """
         return {k: v.AsDict() for k, v in self.tweets.items()}
@@ -100,13 +98,12 @@ class Preppy(object):
         Return an instance of Preppy class
         :param session_file: Optional file name of saved session
         """
-        self.session_file = str(session_file)
+        self.session_file = '' if session_file is None else str(session_file)
         session_dict = read_json(self.session_file)
-        tweet_dict = session_dict["tweets"] if "tweets" in session_dict else {}
+        tweet_dict = {} if session_dict is None else session_dict["tweets"]
         self.tweets = TweetList(tweet_dict)
         self.term_list = []  # List of search terms, each one defining one 'search'
-        self.search_history = []  # list of search dictionaries used
-        self.api = get_api(auth=False)
+        self.api = get_api()
 
     def __dict__(self):
         output = {}
@@ -139,7 +136,10 @@ class Preppy(object):
         Write a json file of the current session
         :return: NoneType
         """
-        fn = self.session_file
+        if self.session_file:
+            fn = self.session_file
+        else:
+            fn = "preppy_session.json"
         output = self.__dict__()
         write_json(output, fn)
 
@@ -151,9 +151,8 @@ class Preppy(object):
         :return: list of dictionaries
         """
         query_list = []
-        dates = self.get_dates(n)
         for term in self.term_list:
-            for since, until in dates:
+            for since, until in self.get_dates(n):
                 q = {"term": [term],
                      "since": since,
                      "until": until,
@@ -162,13 +161,12 @@ class Preppy(object):
                 query_list.append(q)
         return query_list
 
-    def get_dates(self, n, date_fmt=DATE_FORMAT):
+    @staticmethod
+    def get_dates(n):
         """
         Get a series of date ranges to search
         :param int n: The number of date ranges
             to be produced
-        :param str date_fmt: Date formatting string
-            Default is YYYY-MM-DD (compatible with twitter API)
         :return: list of 2-tuples of date strings
         """
         output = []

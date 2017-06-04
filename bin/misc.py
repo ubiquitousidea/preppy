@@ -8,20 +8,17 @@ import shutil
 DATE_FORMAT = "%Y-%M-%d"
 
 
-def get_api(auth=True):
+def get_api(config_file="./config.json"):
     """
     Instantiate a twitter.api.Api object
         from python-twitter package.
-    :param BoolType auth: whether or not to
+    :param str auth: whether or not to
         authenticate using credentials
         stored in config.json
     :return: twitter.api.Api
     """
-    if auth:
-        with open("./config.json", "r") as f:
-            config = json.load(f)
-    else:
-        config = {}
+    with open(config_file, "r") as f:
+        config = json.load(f)
     return Api(**config)
 
 
@@ -67,23 +64,22 @@ def read_json(fn=None):
 
 def anonymize(tweet):
     """
-    Remove user id from tweet dictionary to comply with
-        user agreement that no use data is cached with
-        location data.
+    Keep on certain aspects of the tweet: Place,
+        Hashtag Content, Date, and Text
     :param twitter.models.Status tweet: A tweet
     :return: twitter.models.Status instance
     """
     assert isinstance(tweet, Status)
     tweet = tweet.AsDict()
-    items = ("user",
-             "retweeted_status",
-             "user_mentions",
-             "in_reply_to_screen_name",
-             "in_reply_to_user_id")
-    for item in items:
+    items_to_keep = ("place", "hashtags",
+                     "text", "created_at")
+    output = {}
+    for item in items_to_keep:
         if item in tweet:
-            del tweet[item]
-    return Status(**tweet)
+            output.update({
+                item: tweet[item]
+            })
+    return Status(**output)
 
 
 def minidate(dt, fmt=DATE_FORMAT):
@@ -91,7 +87,9 @@ def minidate(dt, fmt=DATE_FORMAT):
     Convert a datetime object into a string
         Save some lines of code because
         you love neat-looking-code.
-    :param str fmt: format string for strftime()
+    :param str fmt: Date formatting string
+            Default is YYYY-MM-DD (compatible with twitter API)
+            This arg is interpreted by strftime()
     :param datetime.Datetime dt: Date time object
     :return: String formatted nicely for
         Twitter, by default.
