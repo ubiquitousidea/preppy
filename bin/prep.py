@@ -9,11 +9,10 @@ the language because of the Tornado and Scikit-Learn pacakges.
 """
 
 import datetime
-from .misc import get_api, anonymize, read_json, write_json
+from .misc import get_api, anonymize, \
+    read_json, write_json, DATE_FORMAT, \
+    minidate
 from twitter.models import Status
-
-
-DATE_FORMAT = "%Y-%M-%d"
 
 
 class TweetList(object):
@@ -31,7 +30,8 @@ class TweetList(object):
             {'tweet_id_01': <twitter.models.Status>,
              'tweet_id_02': <twitter.models.Status>,...}
         """
-        self.tweets = {} if not tweets else {Status(**tweet) for tweet in tweets}
+        self.tweets = {tweet["id_str"]: Status(**tweet)
+                       for tweet in tweets} if tweets else {}
 
     def __dict__(self):
         """
@@ -52,14 +52,14 @@ class TweetList(object):
         This uses the dict.update method which will
         overwrite any preexisting tweet of the same
         id (unique identifier string)
-        :param tweet: Status or dict
+        :param twitter.models.Status tweet: A tweet
         :return: NoneType
         """
-        if isinstance(tweet, Status):
-            tweet = tweet.AsDict()
-        k = tweet["id_str"]
+        assert isinstance(tweet, Status)
         tweet = anonymize(tweet)
-        self.tweets.update({k: tweet})
+        self.tweets.update({
+            tweet.id_str: tweet
+        })
 
     def add_tweets(self, tweetlist):
         """
@@ -98,7 +98,7 @@ class Preppy(object):
     def __init__(self, session_file=None):
         """
         Return an instance of Preppy class
-        :param tweets: Optional file name of saved session
+        :param session_file: Optional file name of saved session
         """
         self.session_file = str(session_file)
         session_dict = read_json(self.session_file)
@@ -115,7 +115,6 @@ class Preppy(object):
             "term_list": self.term_list,
         })
         return output
-
 
     def set_term(self, term):
         """
@@ -173,9 +172,22 @@ class Preppy(object):
         :return: list of 2-tuples of date strings
         """
         output = []
-        # TODO: Do some stuff
-        # Generate tuples of (since, until)
-        # return the result
+        desired_range = 3 * 365  # Integer number of days
+        actual_range = desired_range - desired_range % n
+        chunk_size = actual_range / n
+
+        time_span = datetime.timedelta(days=n * chunk_size)
+        time_increment = datetime.timedelta(days=chunk_size)
+        today = datetime.datetime.now()
+
+        t1 = today - time_span
+
+        for i in range(n):
+            _t1 = t1 + (i + 0) * time_increment
+            _t2 = t1 + (i + 1) * time_increment
+            date_tuple = (minidate(_t1),
+                          minidate(_t2))
+            output.append(date_tuple)
         return output
 
     def execute_queries(self, query_list):

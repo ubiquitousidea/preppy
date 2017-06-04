@@ -5,6 +5,9 @@ import os
 import shutil
 
 
+DATE_FORMAT = "%Y-%M-%d"
+
+
 def get_api(auth=True):
     """
     Instantiate a twitter.api.Api object
@@ -62,32 +65,16 @@ def read_json(fn=None):
     return d
 
 
-def write_tweet_list(tweetlist, fname=None):
-    """
-    Write out a list of tweets
-    :param tweetlist: list of twitter.models.Status objects
-    :param fname: file name of the tweet list file
-    :return: NoneType
-    """
-    try:
-        fname = fname if fname else 'tweets.json'
-        tweetlist = [anonymize(tweet) for tweet in tweetlist]
-        write_json({"TWEETS": tweetlist}, fname)
-    except:
-        raise ValueError("Unable to write tweet list to json file")
-
-
 def anonymize(tweet):
     """
     Remove user id from tweet dictionary to comply with
         user agreement that no use data is cached with
         location data.
-    :param tweet: dictionary or twitter.models.Status
+    :param twitter.models.Status tweet: A tweet
     :return: twitter.models.Status instance
     """
-    if isinstance(tweet, Status):
-        tweet = tweet.AsDict()
-    assert isinstance(tweet, dict)
+    assert isinstance(tweet, Status)
+    tweet = tweet.AsDict()
     items = ("user",
              "retweeted_status",
              "user_mentions",
@@ -99,15 +86,14 @@ def anonymize(tweet):
     return Status(**tweet)
 
 
-def unique_keys(_list):
+def minidate(dt, fmt=DATE_FORMAT):
     """
-    Return the unique keys in dictionaries
-        contained in a list of dictionaries
-    :param _list: list of dictionaries
-    :return: dict_keys object
+    Convert a datetime object into a string
+        Save some lines of code because
+        you love neat-looking-code.
+    :param str fmt: format string for strftime()
+    :param datetime.Datetime dt: Date time object
+    :return: String formatted nicely for
+        Twitter, by default.
     """
-    ukeys = set()
-    for item in _list:
-        some_keys = set(item.keys())
-        ukeys.update(some_keys)
-    return sorted(list(ukeys))
+    return dt.strftime(fmt)
