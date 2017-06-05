@@ -6,20 +6,21 @@ import shutil
 
 
 DATE_FORMAT = "%Y-%M-%d"
+CONFIG = "./config.json"
 
 
-def get_api(config_file="./config.json"):
+def get_api(config_file=CONFIG):
     """
     Instantiate a twitter.api.Api object
         from python-twitter package.
-    :param str auth: whether or not to
+    :param str config_file: whether or not to
         authenticate using credentials
         stored in config.json
     :return: twitter.api.Api
     """
     with open(config_file, "r") as f:
         config = json.load(f)
-    return Api(**config)
+    return Api(**config, sleep_on_rate_limit=True)
 
 
 def write_json(_dict, fn, pretty=True):
@@ -36,7 +37,6 @@ def write_json(_dict, fn, pretty=True):
         output = json.dumps(_dict, **kwargs)
         fh.write(output)
     shutil.move(fn_tmp, fn)
-    os.remove(fn_tmp)
 
 
 def temp_file_name(_fn):
@@ -55,11 +55,17 @@ def read_json(fn=None):
     :param fn: file name string
     :return: dict
     """
-    if not fn:
-        return None
-    with open(fn, "r") as fh:
-        d = json.load(fh)
+    d = None
+    try:
+        with open(fn, "r") as fh:
+            d = json.load(fh)
+    except:
+        pass
     return d
+
+
+def dict_to_tweets(iterable):
+    pass
 
 
 def anonymize(tweet):
@@ -72,7 +78,8 @@ def anonymize(tweet):
     assert isinstance(tweet, Status)
     tweet = tweet.AsDict()
     items_to_keep = ("place", "hashtags",
-                     "text", "created_at")
+                     "text", "created_at",
+                     "id_str")
     output = {}
     for item in items_to_keep:
         if item in tweet:

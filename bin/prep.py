@@ -26,11 +26,10 @@ class TweetList(object):
         """
         Return an instance of the TweetList class
         :param tweets: dict
-            {'tweet_id_01': <twitter.models.Status>,
-             'tweet_id_02': <twitter.models.Status>,...}
+            {'tweet_id_01': {tweet dict},
+             'tweet_id_02': {tweet dict},...}
         """
-        self.tweets = {tweet["id_str"]: Status(**tweet)
-                       for tweet in tweets} if tweets else {}
+        self.tweets = {id_str: Status(**tweet) for id_str, tweet in tweets.items()} if tweets else {}
 
     def __dict__(self):
         """
@@ -98,7 +97,7 @@ class Preppy(object):
         Return an instance of Preppy class
         :param session_file: Optional file name of saved session
         """
-        self.session_file = '' if session_file is None else str(session_file)
+        self.session_file = 'preppy_session.json' if session_file is None else str(session_file)
         session_dict = read_json(self.session_file)
         tweet_dict = {} if session_dict is None else session_dict["tweets"]
         self.tweets = TweetList(tweet_dict)
@@ -127,7 +126,7 @@ class Preppy(object):
         Run preppy session
         :return: NoneType
         """
-        queries = self.generate_queries(100)
+        queries = self.generate_queries(15)
         self.execute_queries(queries)
         self.write_session_file()
 
@@ -136,23 +135,20 @@ class Preppy(object):
         Write a json file of the current session
         :return: NoneType
         """
-        if self.session_file:
-            fn = self.session_file
-        else:
-            fn = "preppy_session.json"
         output = self.__dict__()
-        write_json(output, fn)
+        write_json(output, self.session_file)
 
-    def generate_queries(self, n=100, lang="en"):
+    def generate_queries(self, n=15, y=3, lang="en"):
         """
         Generate search query dictionaries
         :param int n: Number of date ranges per search term
+        :param int y: The number of years to search
         :param str lang: Language of interest
         :return: list of dictionaries
         """
         query_list = []
         for term in self.term_list:
-            for since, until in self.get_dates(n):
+            for since, until in self.get_dates(n, y):
                 q = {"term": [term],
                      "since": since,
                      "until": until,
@@ -162,15 +158,16 @@ class Preppy(object):
         return query_list
 
     @staticmethod
-    def get_dates(n):
+    def get_dates(n, y):
         """
         Get a series of date ranges to search
         :param int n: The number of date ranges
             to be produced
+        :param int y: The number of years to span
         :return: list of 2-tuples of date strings
         """
         output = []
-        desired_range = 3 * 365  # Integer number of days
+        desired_range = y * 365  # Integer number of days
         actual_range = desired_range - desired_range % n
         chunk_size = actual_range / n
 
@@ -195,11 +192,12 @@ class Preppy(object):
         :return: NoneType
         """
         for q in query_list:
+            print(str(q))
             tweetlist = self.api.GetSearch(**q)
             self.tweets.add_tweets(tweetlist)
 
 
 if __name__ == "__main__":
-    Session = Preppy()
+    Session = Preppy('preppy_session.json')
     Session.set_term("Truvada")
     Session.run()
