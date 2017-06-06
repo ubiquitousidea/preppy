@@ -64,22 +64,17 @@ def read_json(fn=None):
     return d
 
 
-def dict_to_tweets(iterable):
-    pass
-
-
 def anonymize(tweet):
     """
     Keep on certain aspects of the tweet: Place,
-        Hashtag Content, Date, and Text
+        Hashtag Content, and Date
     :param twitter.models.Status tweet: A tweet
     :return: twitter.models.Status instance
     """
     assert isinstance(tweet, Status)
     tweet = tweet.AsDict()
     items_to_keep = ("place", "hashtags",
-                     "text", "created_at",
-                     "id_str")
+                     "created_at", "id_str")
     output = {}
     for item in items_to_keep:
         if item in tweet:

@@ -43,6 +43,26 @@ class TweetList(object):
     def __repr__(self):
         return self.__dict__()
 
+    @property
+    def max_id(self):
+        id_strings = list(self.tweets.keys())
+        ids = [int(i) for i in id_strings]
+        if ids:
+            max_id = max(ids)
+        else:
+            max_id = None
+        return max_id
+
+    @property
+    def min_id(self):
+        id_strings = list(self.tweets.keys())
+        ids = [int(i) for i in id_strings]
+        if ids:
+            min_id = min(ids)
+        else:
+            min_id = None
+        return min_id
+
     def add_tweet(self, tweet):
         """
         Try adding a single tweet to the tweet list
@@ -68,7 +88,9 @@ class TweetList(object):
         for tweet in tweetlist:
             self.add_tweet(tweet)
         len_2 = len(self.tweets)
-        return len_2 - len_1
+        dl = len_2 - len_1
+        print("Added {:d} tweets".format(dl))
+        return dl
 
     def do_more_things(self, **kwargs):
         """
@@ -121,14 +143,69 @@ class Preppy(object):
         assert isinstance(term, str)
         self.term_list += [term]
 
-    def run(self):
+    def run(self, method=0):
         """
         Run preppy session
+        :param int method: indicator of which approach to take (debug use)
         :return: NoneType
         """
-        queries = self.generate_queries()
-        self.execute_queries(queries)
-        self.write_session_file()
+        if method == 0:
+            queries = self.generate_queries()
+            self.execute_queries(queries)
+            self.write_session_file()
+        elif method == 1:
+            for term in self.term_list:
+                self.sequentially_search(term)
+            self.write_session_file()
+        else:
+            raise ValueError("Method arg must be integer in {0,1}")
+
+    def sequentially_search(self, term, backward=True, lang='en'):
+        """
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Remember that this only goes 7 days back. If programming
+        this will take you longer than 7 days, you better just
+        start working on the Streaming API portion of the code.
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        Sequentially search for term $term
+        :param str term: search term
+        :param BoolType backward:
+            If True: search backward from .now()
+            If False: search forward from max id currently known
+        :param str lang: Tweet language.
+        :return: NoneType. Modifies self.tweets in place
+        """
+        # TODO: Create a table to store which tweets (by id_str)
+        # have been returned for a given search term. This
+        # will give visibility to text content but avoid
+        # saving text of the tweet.
+        if backward:
+            i = 0
+            max_iter = 180
+            while i < max_iter:
+                i += 1
+                query = {
+                    "term": [term],
+                    "count": 100,
+                    "lang": lang,
+                    "result_type": "recent"}
+                min_id = self.tweets.min_id
+                if min_id:
+                    query.update({"max_id": min_id})
+                result = self.execute_query(query)
+                n = self.tweets.add_tweets(result)
+                if n == 0:
+                    break
+        else:
+            pass
+
+    def execute_query(self, q):
+        """
+        Wrapper for api.GetSearch
+        :param q: query dictionary
+        :return: list of tweets
+        """
+        return self.api.GetSearch(**q)
 
     def write_session_file(self):
         """
@@ -182,13 +259,11 @@ class Preppy(object):
         :return: NoneType
         """
         for q in query_list:
-            print(str(q))
             tweetlist = self.api.GetSearch(**q)
-            n_added = self.tweets.add_tweets(tweetlist)
-            print("{:d} tweets added".format(n_added))
+            n = self.tweets.add_tweets(tweetlist)
 
 
 if __name__ == "__main__":
-    Session = Preppy('preppy_session.json')
+    Session = Preppy()
     Session.set_term("Truvada")
-    Session.run()
+    Session.run(method=1)
