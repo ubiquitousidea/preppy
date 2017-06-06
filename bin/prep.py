@@ -126,7 +126,7 @@ class Preppy(object):
         Run preppy session
         :return: NoneType
         """
-        queries = self.generate_queries(15)
+        queries = self.generate_queries()
         self.execute_queries(queries)
         self.write_session_file()
 
@@ -138,17 +138,15 @@ class Preppy(object):
         output = self.__dict__()
         write_json(output, self.session_file)
 
-    def generate_queries(self, n=15, y=3, lang="en"):
+    def generate_queries(self, lang="en"):
         """
         Generate search query dictionaries
-        :param int n: Number of date ranges per search term
-        :param int y: The number of years to search
         :param str lang: Language of interest
         :return: list of dictionaries
         """
         query_list = []
         for term in self.term_list:
-            for since, until in self.get_dates(n, y):
+            for since, until in self.get_dates():
                 q = {"term": [term],
                      "since": since,
                      "until": until,
@@ -158,25 +156,17 @@ class Preppy(object):
         return query_list
 
     @staticmethod
-    def get_dates(n, y):
+    def get_dates():
         """
         Get a series of date ranges to search
-        :param int n: The number of date ranges
-            to be produced
-        :param int y: The number of years to span
         :return: list of 2-tuples of date strings
         """
         output = []
-        desired_range = y * 365  # Integer number of days
-        actual_range = desired_range - desired_range % n
-        chunk_size = actual_range / n
-
-        time_span = datetime.timedelta(days=n * chunk_size)
-        time_increment = datetime.timedelta(days=chunk_size)
+        n = 7  # Integer number of days
+        time_span = datetime.timedelta(days=n)
+        time_increment = datetime.timedelta(days=1)
         today = datetime.datetime.now()
-
         t1 = today - time_span
-
         for i in range(n):
             _t1 = t1 + (i + 0) * time_increment
             _t2 = t1 + (i + 1) * time_increment
@@ -194,7 +184,8 @@ class Preppy(object):
         for q in query_list:
             print(str(q))
             tweetlist = self.api.GetSearch(**q)
-            self.tweets.add_tweets(tweetlist)
+            n_added = self.tweets.add_tweets(tweetlist)
+            print("{:d} tweets added".format(n_added))
 
 
 if __name__ == "__main__":

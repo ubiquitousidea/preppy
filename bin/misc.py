@@ -5,7 +5,7 @@ import os
 import shutil
 
 
-DATE_FORMAT = "%Y-%M-%d"
+DATE_FORMAT = "%Y-%m-%d"
 CONFIG = "./config.json"
 
 
