@@ -1,12 +1,28 @@
 from twitter.api import Api
-from twitter.models import Status
 import json
-import os
 import shutil
+from contextlib import contextmanager
+import os
 
 
 DATE_FORMAT = "%Y-%m-%d"
 CONFIG = "./config.json"
+SESSION_FILE = "preppy_session.json"
+
+
+@contextmanager
+def cd(newdir):
+    """
+    From Stack Exchange example
+    https://stackoverflow.com/questions/431684/how-do-i-cd-in-python
+    :param newdir: Directory to change into
+    """
+    prevdir = os.getcwd()
+    os.chdir(os.path.expanduser(newdir))
+    try:
+        yield
+    finally:
+        os.chdir(prevdir)
 
 
 def get_api(config_file=CONFIG):
@@ -62,26 +78,6 @@ def read_json(fn=None):
     except:
         pass
     return d
-
-
-def anonymize(tweet):
-    """
-    Keep on certain aspects of the tweet: Place,
-        Hashtag Content, and Date
-    :param twitter.models.Status tweet: A tweet
-    :return: twitter.models.Status instance
-    """
-    assert isinstance(tweet, Status)
-    tweet = tweet.AsDict()
-    items_to_keep = ("place", "hashtags",
-                     "created_at", "id_str")
-    output = {}
-    for item in items_to_keep:
-        if item in tweet:
-            output.update({
-                item: tweet[item]
-            })
-    return Status(**output)
 
 
 def minidate(dt, fmt=DATE_FORMAT):

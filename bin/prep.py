@@ -8,18 +8,140 @@ user interface to ask questions relevant to HIV researchers. Python chosen as
 the language because of the Tornado and Scikit-Learn pacakges.
 """
 
-import datetime
-from misc import get_api, anonymize, \
-    read_json, write_json, minidate
 from twitter.models import Status
+from .misc import (
+    get_api, read_json,
+    write_json,
+    SESSION_FILE
+)
+
+
+TWEETS = "tweets"
+IDLIST = "index_list"
+
+
+class Preppy(object):
+    """
+    Class object for session of Preppy, the friendly HIV web crawler.
+    Preppy takes your questions and obtains through various means
+    the prevalence of certain search terms in the twitter sphere
+    using both the twitter search api and twitter streaming api.
+    Preppy can answer questions like:
+        Preppy, would you please tell me which city has more people
+        talking about side effect xyz associated with drug abc?
+
+        Other useful stuff here...
+    """
+
+    def __init__(self):
+        """
+        Return an instance of Preppy class
+        """
+        self.tweets = TweetList()
+        self.index_table = IdTable()
+        self.api = get_api()
+
+    @property
+    def as_dict(self):
+        """
+        Method for returning the contents of this object as a dictionary
+        :return:
+        """
+        output = dict()
+        output["tweets"] = self.tweets.as_dict
+        output["index_table"] = self.index_table.as_dict
+        return output
+
+    @property
+    def terms(self):
+        return self.index_table.terms
+
+    def add_search_term(self, term):
+        """
+        Set a new search term
+        :param str term: Search term defining one search
+        :return: NoneType
+        """
+        self.index_table.add_term(term)
+
+    def load_stored_tweets(self, session_file_name):
+        """
+        Load a session file at any time
+        :return: NoneType. Adds tweets to tweet
+            list (that aren't already present)
+        """
+        tweet_dict = read_json(session_file_name)
+        self.tweets.add_tweets(tweet_dict["tweets"])
+
+    def run(self):
+        """
+        Run preppy session
+        :return: NoneType
+        """
+        for term in self.terms:
+            self.sequentially_search(term)
+        self.write_session_file()
+
+    def sequentially_search(self, term, lang='en'):
+        """
+        Sequentially search for term $term
+            The max_iter=180 implies the maximum number
+            of tweets that can be collected per run (~18000)
+        :param str term: search term
+        :param str lang: Tweet language.
+        :return: NoneType. Modifies self.tweets in place
+        """
+        i = 0
+        max_iter = 180
+        query = {"term": [term],
+                 "count": 100,
+                 "lang": lang,
+                 "result_type": "recent"}
+        while i < max_iter:
+            i += 1
+            min_id = self.tweets.min_id
+            if min_id and i != 1:
+                query.update({"max_id": min_id})
+            result = self.execute_query(query)
+            n = self.add_tweets(result, term)
+            if n == 0:
+                break
+
+    def add_tweets(self, tweetlist, term):
+        len1 = len(self.tweets)
+        id_list = self.tweets.add_tweets(tweetlist)
+        self.index_table.make_connections(term, id_list)
+        len2 = len(self.tweets)
+        return len2 - len1
+
+    def execute_query(self, q):
+        """
+        Wrapper for twitter.api.GetSearch
+        :param q: query dictionary
+        :return: list of tweets
+        """
+        return self.api.GetSearch(**q)
+
+    def write_session_file(self, append=True):
+        """
+        Write a json file of the current session
+        :param BoolType append: If True, Preppy
+            will open last session file and
+            append to it. Tweets collected
+            in this session take precedence
+            over ones in the existing file
+        :return: NoneType
+        """
+        output = self.as_dict
+
+        write_json(output, SESSION_FILE)
 
 
 class TweetList(object):
     """
-    Class object for constructing a tweet container that
-        automatically anonymizes, has methods for adding a
-        tweet only if it is not present, and writing
-        files.
+    Class object for constructing a tweet container
+    has methods for adding a tweet only if it is
+    not present, and writing files.
     """
 
     def __init__(self, tweets=None):
@@ -29,19 +151,47 @@ class TweetList(object):
             {'tweet_id_01': {tweet dict},
              'tweet_id_02': {tweet dict},...}
         """
-        self.tweets = {id_str: Status(**tweet) for id_str, tweet in tweets.items()} if tweets else {}
+        if tweets is None:
+            self.tweets = {}
+        else:
+            self.tweets = {id_str: Status(**tweet)
+                           for id_str, tweet
+                           in tweets.items()}
+        self.keyword_table = {}
 
-    def __dict__(self):
+    @property
+    def as_dict(self):
         """
         Property to return json representation of this class
         The self.tweets is a dict of <twitter.models.Status> objects
         This method converts the Status objects to dictionaries
         :return: dict of dict representations of tweets (Statuses)
         """
-        return {k: v.AsDict() for k, v in self.tweets.items()}
+        return {k: v.AsDict()
+                for k, v
+                in self.tweets.items()}
 
     def __repr__(self):
-        return self.__dict__()
+        return str(self.as_dict)
+
+    def __len__(self):
+        return self.n
+
+    @property
+    def n(self):
+        return len(self.tweets)
+
+    @property
+    def n_geotagged(self):
+        return len(self.geotagged)
+
+    @property
+    def geotagged(self):
+        geo_tweets = {id_str: tweet
+                      for id_str, tweet
+                      in self.tweets.items()
+                      if "place" in tweet.AsDict()}
+        return geo_tweets
 
     @property
     def max_id(self):
@@ -69,201 +219,89 @@ class TweetList(object):
         This uses the dict.update method which will
         overwrite any preexisting tweet of the same
         id (unique identifier string)
-        :param twitter.models.Status tweet: A tweet
+        :param twitter.Status tweet: A tweet
         :return: NoneType
         """
-        assert isinstance(tweet, Status)
-        tweet = anonymize(tweet)
-        self.tweets.update({
-            tweet.id_str: tweet
-        })
+        id_str = tweet.id_str
+        self.tweets.update({id_str: tweet})
 
     def add_tweets(self, tweetlist):
         """
         Add a list of tweets to the tweet list
-        :param tweetlist: list of <twitter.models.Status> instances
-        :return: integer, how many unique new tweets were added
+        :param tweetlist: list of <twitter.Status> instances
+        :return: List of ID strings that were added
         """
         len_1 = len(self.tweets)
+        id_list = []
         for tweet in tweetlist:
+            id_list.append(tweet.id_str)
             self.add_tweet(tweet)
         len_2 = len(self.tweets)
         dl = len_2 - len_1
         print("Added {:d} tweets".format(dl))
-        return dl
-
-    def do_more_things(self, **kwargs):
-        """
-        Do arbitrarily useful things here.
-        :param kwargs: Questions
-        :return: Useful knowledge
-        """
-        pass
+        return id_list
 
 
-class Preppy(object):
-    """
-    Class object for session of Preppy, the friendly HIV web crawler.
-    Preppy takes your questions and obtains through various means
-    the prevalence of certain search terms in the twitter sphere
-    using both the twitter search api and twitter streaming api.
-    Preppy can answer questions like:
-        Preppy, would you please tell me which city has more people
-        talking about side effect xyz associated with drug abc?
+class IdTable(object):
+    def __init__(self, d=None):
+        if type(d) is dict:
+            self._idtable = {search_term: set(id_set)
+                             for search_term, id_set
+                             in d.items()}
+        else:
+            self._idtable = {}
 
-        Other useful stuff here...
-    """
+    def add_term(self, term):
+        if term in self._idtable:
+            return
+        self._idtable[term] = set({})
 
-    def __init__(self, session_file=None):
-        """
-        Return an instance of Preppy class
-        :param session_file: Optional file name of saved session
-        """
-        self.session_file = 'preppy_session.json' if session_file is None else str(session_file)
-        session_dict = read_json(self.session_file)
-        tweet_dict = {} if session_dict is None else session_dict["tweets"]
-        self.tweets = TweetList(tweet_dict)
-        self.term_list = []  # List of search terms, each one defining one 'search'
-        self.api = get_api()
-
-    def __dict__(self):
-        output = {}
-        output.update({
-            "tweets": self.tweets.__dict__(),
-            "term_list": self.term_list,
-        })
+    @property
+    def as_dict(self):
+        output = {search_term: list(id_set)
+                  for search_term, id_set
+                  in self._idtable.items()}
         return output
 
-    def set_term(self, term):
+    @property
+    def terms(self):
+        return sorted(list(self._idtable.keys()))
+
+    def make_connection(self, term, id_str):
         """
-        Set a new search term
-        :param str term: Search term defining one search
+        Connect a search term to a tweet ID
+        :param term: The search term
+        :param id_str: The Tweet ID string
         :return: NoneType
         """
-        assert isinstance(term, str)
-        self.term_list += [term]
+        if term not in self._idtable:
+            self.add_term(term)
+        self._idtable[term].add(id_str)
 
-    def run(self, method=0):
+    def make_connections(self, term, id_str_list):
         """
-        Run preppy session
-        :param int method: indicator of which approach to take (debug use)
+        Add multiple tweet id strings to a
+        specified search term in the table
+        :param term: The search term
+        :param id_str_list: List of Tweet ID strings
         :return: NoneType
         """
-        if method == 0:
-            queries = self.generate_queries()
-            self.execute_queries(queries)
-            self.write_session_file()
-        elif method == 1:
-            for term in self.term_list:
-                self.sequentially_search(term)
-            self.write_session_file()
-        else:
-            raise ValueError("Method arg must be integer in {0,1}")
+        if term not in self._idtable:
+            self.add_term(term)
+        self._idtable[term].update(id_str_list)
 
-    def sequentially_search(self, term, backward=True, lang='en'):
+    def ask_a_question(self, question):
         """
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Remember that this only goes 7 days back. If programming
-        this will take you longer than 7 days, you better just
-        start working on the Streaming API portion of the code.
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Sequentially search for term $term
-        :param str term: search term
-        :param BoolType backward:
-            If True: search backward from .now()
-            If False: search forward from max id currently known
-        :param str lang: Tweet language.
-        :return: NoneType. Modifies self.tweets in place
+        Answer the question you have
+        :param question: a question
+        :return: the answer
         """
-        # TODO: Create a table to store which tweets (by id_str)
-        # have been returned for a given search term. This
-        # will give visibility to text content but avoid
-        # saving text of the tweet.
-        if backward:
-            i = 0
-            max_iter = 180
-            while i < max_iter:
-                i += 1
-                query = {
-                    "term": [term],
-                    "count": 100,
-                    "lang": lang,
-                    "result_type": "recent"}
-                min_id = self.tweets.min_id
-                if min_id:
-                    query.update({"max_id": min_id})
-                result = self.execute_query(query)
-                n = self.tweets.add_tweets(result)
-                if n == 0:
-                    break
-        else:
-            pass
-
-    def execute_query(self, q):
-        """
-        Wrapper for api.GetSearch
-        :param q: query dictionary
-        :return: list of tweets
-        """
-        return self.api.GetSearch(**q)
-
-    def write_session_file(self):
-        """
-        Write a json file of the current session
-        :return: NoneType
-        """
-        output = self.__dict__()
-        write_json(output, self.session_file)
-
-    def generate_queries(self, lang="en"):
-        """
-        Generate search query dictionaries
-        :param str lang: Language of interest
-        :return: list of dictionaries
-        """
-        query_list = []
-        for term in self.term_list:
-            for since, until in self.get_dates():
-                q = {"term": [term],
-                     "since": since,
-                     "until": until,
-                     "count": 100,
-                     "lang": lang}
-                query_list.append(q)
-        return query_list
-
-    @staticmethod
-    def get_dates():
-        """
-        Get a series of date ranges to search
-        :return: list of 2-tuples of date strings
-        """
-        output = []
-        n = 7  # Integer number of days
-        time_span = datetime.timedelta(days=n)
-        time_increment = datetime.timedelta(days=1)
-        today = datetime.datetime.now()
-        t1 = today - time_span
-        for i in range(n):
-            _t1 = t1 + (i + 0) * time_increment
-            _t2 = t1 + (i + 1) * time_increment
-            date_tuple = (minidate(_t1),
-                          minidate(_t2))
-            output.append(date_tuple)
-        return output
-
-    def execute_queries(self, query_list):
-        """
-        Call Twitter Search API repeatedly
-        :param query_list: list of dictionaries
-        :return: NoneType
-        """
-        for q in query_list:
-            tweetlist = self.api.GetSearch(**q)
-            n = self.tweets.add_tweets(tweetlist)
-
+        # TODO: answer a question here
+        return question
 
 if __name__ == "__main__":
     Session = Preppy()
-    Session.set_term("Truvada")
-    Session.run(method=1)
+    Session.add_search_term("Truvada")
+    Session.run()
+    print("There are {:d} tweets stored".format(Session.tweets.n))
+    print("Of those, {:d} are geo-tagged".format(Session.tweets.n_geotagged))
