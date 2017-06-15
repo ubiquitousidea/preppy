@@ -20,23 +20,29 @@ TWEETS = "tweets"
 IDLIST = "index_list"
 
 
-class Preppy(object):
-    """
-    Class object for session of Preppy, the friendly HIV web crawler.
-    Preppy takes your questions and obtains through various means
-    the prevalence of certain search terms in the twitter sphere
-    using both the twitter search api and twitter streaming api.
-    Preppy can answer questions like:
-        Preppy, would you please tell me which city has more people
-        talking about side effect xyz associated with drug abc?
+class NiceBaseClass(object):
+    def __init__(self):
+        pass
 
-        Other useful stuff here...
-    """
+    @classmethod
+    def from_dict(cls, d):
+        _obj = cls()
+        for key, value in d.items():
+            _obj.__getattribute__(key).from_dict(value)
+        return _obj
 
+    @classmethod
+    def from_session_file(cls, fname):
+        d = read_json(fname)
+        return cls.from_dict(d)
+
+
+class Preppy(NiceBaseClass):
     def __init__(self):
         """
         Return an instance of Preppy class
         """
+        super(NiceBaseClass, self).__init__()
         self.tweets = TweetList()
         self.index_table = IdTable()
         self.api = get_api()
@@ -75,7 +81,9 @@ class Preppy(object):
 
     def run(self):
         """
-        Run preppy session
+        #--------------------------------------------------------- a landmark -
+        # - Run preppy session ------------------------------------------------
+        #----------------------------------------------------------------------
         :return: NoneType
         """
         for term in self.terms:
@@ -97,15 +105,24 @@ class Preppy(object):
                  "count": 100,
                  "lang": lang,
                  "result_type": "recent"}
+        tweet_dict = dict()  # Temporary container for tweets
+        id_set = set()
         while i < max_iter:
+            n1 = len(tweet_dict)
             i += 1
-            min_id = self.tweets.min_id
-            if min_id and i != 1:
-                query.update({"max_id": min_id})
-            result = self.execute_query(query)
-            n = self.add_tweets(result, term)
+            min_id = min(id_set) if id_set else None
+            if min_id:
+                query.update({"max_id": str(min_id)})
+            tweet_list = self.api.GetSearch(**query)
+            tweet_dict.update({tweet.id_str: tweet
+                               for tweet
+                               in tweet_list})
+            id_set.update([tweet.id for tweet in tweet_list])
+            n2 = len(tweet_dict)
+            n = n2 - n1
             if n == 0:
                 break
+        self.add_tweets(tweet_dict, term)
 
     def add_tweets(self, tweetlist, term):
         len1 = len(self.tweets)
@@ -114,30 +131,16 @@ class Preppy(object):
         len2 = len(self.tweets)
         return len2 - len1
 
-    def execute_query(self, q):
-        """
-        Wrapper for twitter.api.GetSearch
-        :param q: query dictionary
-        :return: list of tweets
-        """
-        return self.api.GetSearch(**q)
-
-    def write_session_file(self, append=True):
+    def write_session_file(self):
         """
         Write a json file of the current session
-        :param BoolType append: If True, Preppy
-            will open last session file and
-            append to it. Tweets collected
-            in this session take precedence
-            over ones in the existing file
         :return: NoneType
         """
         output = self.as_dict
-
         write_json(output, SESSION_FILE)
 
 
-class TweetList(object):
+class TweetList(NiceBaseClass):
     """
     Class object for constructing a tweet container
     has methods for adding a tweet only if it is
@@ -151,13 +154,13 @@ class TweetList(object):
             {'tweet_id_01': {tweet dict},
              'tweet_id_02': {tweet dict},...}
         """
+        super(NiceBaseClass, self).__init__()
         if tweets is None:
             self.tweets = {}
         else:
             self.tweets = {id_str: Status(**tweet)
                            for id_str, tweet
                            in tweets.items()}
-        self.keyword_table = {}
 
     @property
     def as_dict(self):
@@ -220,30 +223,39 @@ class TweetList(object):
         overwrite any preexisting tweet of the same
         id (unique identifier string)
         :param twitter.Status tweet: A tweet
-        :return: NoneType
+        :return: How many tweets were added. integer.
         """
         id_str = tweet.id_str
-        self.tweets.update({id_str: tweet})
+        if id_str not in self.tweets:
+            self.tweets[id_str] = tweet
+            return 1
+        else:
+            return 0
 
-    def add_tweets(self, tweetlist):
+    def add_tweets(self, tweets):
         """
         Add a list of tweets to the tweet list
-        :param tweetlist: list of <twitter.Status> instances
+        :param tweets: list or dict of tweets
+            If dict, key is id string (id_str attribute)
         :return: List of ID strings that were added
         """
-        len_1 = len(self.tweets)
         id_list = []
-        for tweet in tweetlist:
-            id_list.append(tweet.id_str)
-            self.add_tweet(tweet)
-        len_2 = len(self.tweets)
-        dl = len_2 - len_1
-        print("Added {:d} tweets".format(dl))
+        n_added = 0
+        if type(tweets) is list:
+            for tweet in tweets:
+                id_list.append(tweet.id_str)
+                n_added += self.add_tweet(tweet)
+        elif type(tweets) is dict:
+            for id_str, tweet in tweets.items():
+                id_list.append(id_str)
+                n_added += self.add_tweet(tweet)
+        print("Added {:d} tweets".format(n_added))
         return id_list
 
 
-class IdTable(object):
+class IdTable(NiceBaseClass):
     def __init__(self, d=None):
+        super(NiceBaseClass, self).__init__()
         if type(d) is dict:
             self._idtable = {search_term: set(id_set)
                              for search_term, id_set
@@ -262,6 +274,9 @@ class IdTable(object):
                   for search_term, id_set
                   in self._idtable.items()}
         return output
+
+    @classmethod
+    def from_dict(cls):
 
     @property
     def terms(self):
@@ -290,14 +305,6 @@ class IdTable(object):
             self.add_term(term)
         self._idtable[term].update(id_str_list)
 
-    def ask_a_question(self, question):
-        """
-        Answer the question you have
-        :param question: a question
-        :return: the answer
-        """
-        # TODO: answer a question here
-        return question
 
 if __name__ == "__main__":
     Session = Preppy()
