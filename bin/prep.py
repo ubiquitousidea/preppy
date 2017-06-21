@@ -5,11 +5,11 @@ discussion of PrEP (Truvada) on Twitter.
 Future work may include expansion to other social media API"s and other health
 topics. This will ultimately be the backend code used on a web based graphical
 user interface to ask questions relevant to HIV researchers. Python chosen as
-the language because of the Tornado and Scikit-Learn pacakges.
+the language because of the Tornado and Scikit-Learn packages.
 """
 
 from twitter.models import Status
-from .misc import (
+from misc import (
     get_api, read_json,
     write_json,
     SESSION_FILE
@@ -37,14 +37,16 @@ class NiceBaseClass(object):
         return cls.from_dict(d)
 
 
-class Preppy(NiceBaseClass):
-    def __init__(self):
+class Preppy(object):
+    def __init__(self, session_file_name=None):
         """
         Return an instance of Preppy class
+        :param str session_file_name: Name of a session file (optional)
         """
-        super(NiceBaseClass, self).__init__()
-        self.tweets = TweetList()
-        self.index_table = IdTable()
+        if session_file_name:
+            self.tweets = TweetList.from_session_file(session_file_name)
+        else:
+            self.tweets = TweetList()
         self.api = get_api()
 
     @property
@@ -53,41 +55,17 @@ class Preppy(NiceBaseClass):
         Method for returning the contents of this object as a dictionary
         :return:
         """
-        output = dict()
-        output["tweets"] = self.tweets.as_dict
-        output["index_table"] = self.index_table.as_dict
+        output = self.tweets.as_dict
         return output
 
-    @property
-    def terms(self):
-        return self.index_table.terms
-
-    def add_search_term(self, term):
-        """
-        Set a new search term
-        :param str term: Search term defining one search
-        :return: NoneType
-        """
-        self.index_table.add_term(term)
-
-    def load_stored_tweets(self, session_file_name):
-        """
-        Load a session file at any time
-        :return: NoneType. Adds tweets to tweet
-            list (that aren't already present)
-        """
-        tweet_dict = read_json(session_file_name)
-        self.tweets.add_tweets(tweet_dict["tweets"])
-
-    def run(self):
+    def get_more_tweets(self, term):
         """
         #--------------------------------------------------------- a landmark -
         # - Run preppy session ------------------------------------------------
         #----------------------------------------------------------------------
         :return: NoneType
         """
-        for term in self.terms:
-            self.sequentially_search(term)
+        self.sequentially_search(term)
         self.write_session_file()
 
     def sequentially_search(self, term, lang='en'):
@@ -99,35 +77,32 @@ class Preppy(NiceBaseClass):
         :param str lang: Tweet language.
         :return: NoneType. Modifies self.tweets in place
         """
-        i = 0
-        max_iter = 180
         query = {"term": [term],
                  "count": 100,
                  "lang": lang,
                  "result_type": "recent"}
-        tweet_dict = dict()  # Temporary container for tweets
-        id_set = set()
+        min_id = self.tweets.max_id
+        if min_id is not None:
+            query.update({"since_id": min_id})
+        tweet_list = TweetList()
+        i = 0
+        max_iter = 180
         while i < max_iter:
-            n1 = len(tweet_dict)
+            n1 = len(tweet_list)
             i += 1
-            min_id = min(id_set) if id_set else None
-            if min_id:
-                query.update({"max_id": str(min_id)})
-            tweet_list = self.api.GetSearch(**query)
-            tweet_dict.update({tweet.id_str: tweet
-                               for tweet
-                               in tweet_list})
-            id_set.update([tweet.id for tweet in tweet_list])
-            n2 = len(tweet_dict)
-            n = n2 - n1
-            if n == 0:
+            max_id = tweet_list.min_id
+            if max_id is not None:
+                query.update({"max_id": str(max_id - 1)})
+            response = self.api.GetSearch(**query)
+            tweet_list.add_tweets(response)
+            n2 = len(tweet_list)
+            if n1 == n2:
                 break
-        self.add_tweets(tweet_dict, term)
+        self.add_tweets(tweet_list)
 
-    def add_tweets(self, tweetlist, term):
+    def add_tweets(self, tweetlist):
         len1 = len(self.tweets)
-        id_list = self.tweets.add_tweets(tweetlist)
-        self.index_table.make_connections(term, id_list)
+        self.tweets.add_tweets(tweetlist)
         len2 = len(self.tweets)
         return len2 - len1
 
@@ -140,7 +115,7 @@ class Preppy(NiceBaseClass):
         write_json(output, SESSION_FILE)
 
 
-class TweetList(NiceBaseClass):
+class TweetList(object):
     """
     Class object for constructing a tweet container
     has methods for adding a tweet only if it is
@@ -154,13 +129,24 @@ class TweetList(NiceBaseClass):
             {'tweet_id_01': {tweet dict},
              'tweet_id_02': {tweet dict},...}
         """
-        super(NiceBaseClass, self).__init__()
         if tweets is None:
             self.tweets = {}
         else:
             self.tweets = {id_str: Status(**tweet)
                            for id_str, tweet
                            in tweets.items()}
+
+    @classmethod
+    def from_dict(cls, d):
+        _obj = cls()
+        _obj.tweets.update({k: Status(**v) for k, v in d.items()})
+        return _obj
+
+    @classmethod
+    def from_session_file(cls, fname):
+        d = read_json(fname)
+        if d:
+            return cls.from_dict(d)
 
     @property
     def as_dict(self):
@@ -245,11 +231,14 @@ class TweetList(NiceBaseClass):
             for tweet in tweets:
                 id_list.append(tweet.id_str)
                 n_added += self.add_tweet(tweet)
+                print("Added {:d} tweets".format(n_added))
         elif type(tweets) is dict:
             for id_str, tweet in tweets.items():
                 id_list.append(id_str)
                 n_added += self.add_tweet(tweet)
-        print("Added {:d} tweets".format(n_added))
+                print("Added {:d} tweets".format(n_added))
+        elif type(tweets) is TweetList:
+            self.add_tweets(tweets.tweets)
         return id_list
 
 
@@ -274,9 +263,6 @@ class IdTable(NiceBaseClass):
                   for search_term, id_set
                   in self._idtable.items()}
         return output
-
-    @classmethod
-    def from_dict(cls):
 
     @property
     def terms(self):
@@ -307,8 +293,7 @@ class IdTable(NiceBaseClass):
 
 
 if __name__ == "__main__":
-    Session = Preppy()
-    Session.add_search_term("Truvada")
-    Session.run()
+    Session = Preppy(session_file_name="preppy_session.json")
+    Session.get_more_tweets("Truvada")
     print("There are {:d} tweets stored".format(Session.tweets.n))
     print("Of those, {:d} are geo-tagged".format(Session.tweets.n_geotagged))
