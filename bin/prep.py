@@ -172,15 +172,30 @@ class TweetList(object):
 
     @property
     def n_geotagged(self):
-        return len(self.geotagged)
+        return len(self.geotagged())
 
-    @property
-    def geotagged(self):
-        geo_tweets = {id_str: tweet
-                      for id_str, tweet
-                      in self.tweets.items()
-                      if "place" in tweet.AsDict()}
+    def geotagged(self, tweet_format="Status"):
+        valid_formats = ("Status", "dict")
+        assert tweet_format in valid_formats
+        if tweet_format == "Status":
+            geo_tweets = {id_str: tweet
+                          for id_str, tweet
+                          in self.tweets.items()
+                          if "place" in tweet.AsDict()}
+        elif tweet_format == "dict":
+            geo_tweets = {id_str: tweet.AsDict()
+                          for id_str, tweet
+                          in self.tweets.items()
+                          if "place" in tweet.AsDict()}
+        else:
+            raise ValueError(
+                "Format must be in {:s}".format(
+                    valid_formats.__str__()))
         return geo_tweets
+
+    def export_geotagged_tweets(self):
+        d = self.geotagged(tweet_format="dict")
+        write_json(d, "geotagged_tweets.json")
 
     @property
     def max_id(self):
@@ -231,12 +246,10 @@ class TweetList(object):
             for tweet in tweets:
                 id_list.append(tweet.id_str)
                 n_added += self.add_tweet(tweet)
-                print("Added {:d} tweets".format(n_added))
         elif type(tweets) is dict:
             for id_str, tweet in tweets.items():
                 id_list.append(id_str)
                 n_added += self.add_tweet(tweet)
-                print("Added {:d} tweets".format(n_added))
         elif type(tweets) is TweetList:
             self.add_tweets(tweets.tweets)
         return id_list
@@ -297,3 +310,4 @@ if __name__ == "__main__":
     Session.get_more_tweets("Truvada")
     print("There are {:d} tweets stored".format(Session.tweets.n))
     print("Of those, {:d} are geo-tagged".format(Session.tweets.n_geotagged))
+    Session.tweets.export_geotagged_tweets()
