@@ -240,7 +240,8 @@ class TweetList(object):
 
 if __name__ == "__main__":
     Session = Preppy(session_file_name="preppy_session.json")
+    print("There are {:d} tweets. Retrieving more tweets...".format(Session.tweets.n))
     Session.get_more_tweets("Truvada")
-    print("There are {:d} tweets stored".format(Session.tweets.n))
+    print("There are {:d} tweets now".format(Session.tweets.n))
     print("Of those, {:d} are geo-tagged".format(Session.tweets.n_geotagged))
     Session.tweets.export_geotagged_tweets()
