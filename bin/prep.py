@@ -20,23 +20,6 @@ TWEETS = "tweets"
 IDLIST = "index_list"
 
 
-class NiceBaseClass(object):
-    def __init__(self):
-        pass
-
-    @classmethod
-    def from_dict(cls, d):
-        _obj = cls()
-        for key, value in d.items():
-            _obj.__getattribute__(key).from_dict(value)
-        return _obj
-
-    @classmethod
-    def from_session_file(cls, fname):
-        d = read_json(fname)
-        return cls.from_dict(d)
-
-
 class Preppy(object):
     def __init__(self, session_file_name=None):
         """
@@ -253,56 +236,6 @@ class TweetList(object):
         elif type(tweets) is TweetList:
             self.add_tweets(tweets.tweets)
         return id_list
-
-
-class IdTable(NiceBaseClass):
-    def __init__(self, d=None):
-        super(NiceBaseClass, self).__init__()
-        if type(d) is dict:
-            self._idtable = {search_term: set(id_set)
-                             for search_term, id_set
-                             in d.items()}
-        else:
-            self._idtable = {}
-
-    def add_term(self, term):
-        if term in self._idtable:
-            return
-        self._idtable[term] = set({})
-
-    @property
-    def as_dict(self):
-        output = {search_term: list(id_set)
-                  for search_term, id_set
-                  in self._idtable.items()}
-        return output
-
-    @property
-    def terms(self):
-        return sorted(list(self._idtable.keys()))
-
-    def make_connection(self, term, id_str):
-        """
-        Connect a search term to a tweet ID
-        :param term: The search term
-        :param id_str: The Tweet ID string
-        :return: NoneType
-        """
-        if term not in self._idtable:
-            self.add_term(term)
-        self._idtable[term].add(id_str)
-
-    def make_connections(self, term, id_str_list):
-        """
-        Add multiple tweet id strings to a
-        specified search term in the table
-        :param term: The search term
-        :param id_str_list: List of Tweet ID strings
-        :return: NoneType
-        """
-        if term not in self._idtable:
-            self.add_term(term)
-        self._idtable[term].update(id_str_list)
 
 
 if __name__ == "__main__":
