@@ -36,7 +36,10 @@ def get_api(config_file=CONFIG):
     """
     with open(config_file, "r") as f:
         config = json.load(f)
-    return Api(**config, sleep_on_rate_limit=True)
+    api = Api(sleep_on_rate_limit=True,
+              tweet_mode='extended',
+              **config)
+    return api
 
 
 def write_json(_dict, fn, pretty=True):
