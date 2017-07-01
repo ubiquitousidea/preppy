@@ -8,11 +8,11 @@ user interface to ask questions relevant to HIV researchers. Python chosen as
 the language because of the Tornado and Scikit-Learn packages.
 """
 
+import sys
 from twitter.models import Status
 from misc import (
-    get_api, read_json,
-    write_json,
-    SESSION_FILE
+    get_api, read_json, write_json, SESSION_FILE_NAME,
+    cull_old_files, backup_session
 )
 
 
@@ -21,15 +21,20 @@ IDLIST = "index_list"
 
 
 class Preppy(object):
-    def __init__(self, session_file_name=None):
+    def __init__(self, session_file_name=None,
+                 try_default_session=True,
+                 custom_backup_dir=None):
         """
         Return an instance of Preppy class
         :param str session_file_name: Name of a session file (optional)
         """
         if session_file_name:
             self.tweets = TweetList.from_session_file(session_file_name)
+        elif try_default_session:
+            self.tweets = TweetList.from_session_file("preppy_session.json")
         else:
             self.tweets = TweetList()
+        self.backups_dir = custom_backup_dir if custom_backup_dir else "backups"
         self.api = get_api()
 
     @property
@@ -41,32 +46,59 @@ class Preppy(object):
         output = self.tweets.as_dict
         return output
 
-    def get_more_tweets(self, term):
+    def status_prior(self):
+        print("There are {:d} tweets. Retrieving more tweets...".format(self.tweets.n))
+
+    def status_posterior(self):
+        print("There are {:d} tweets now".format(self.tweets.n))
+        print("Of those, {:d} are geo-tagged".format(self.tweets.n_geotagged))
+
+    def get_tweets(self, term):
         """
         #--------------------------------------------------------- a landmark -
-        # - Run preppy session ------------------------------------------------
+        # - Run preppy session initially --------------------------------------
         #----------------------------------------------------------------------
+        Search for a term an get all available tweets. Use this first.
+        :param term:
+        :return:
+        """
+        self.get_more_tweets(term, lsb=False)
+
+    def get_more_tweets(self, term, lsb=True):
+        """
+        #--------------------------------------------------- another landmark -
+        # - Run preppy session after initial run ------------------------------
+        #----------------------------------------------------------------------
+
+        :param BoolType lsb: Last Session Backstop.
+            See self.sequentially_search() docstring
         :return: NoneType
         """
-        self.sequentially_search(term)
-        self.write_session_file()
+        self.status_prior()
+        self.sequentially_search(term, last_session_backstop=lsb)
+        self.status_posterior()
+        self.cleanup_session()
 
-    def sequentially_search(self, term, lang='en'):
+    def sequentially_search(self, term, lang='en',
+                            last_session_backstop=False):
         """
         Sequentially search for term $term
-            The max_iter=180 implies the maximum number
-            of tweets that can be collected per run (~18000)
         :param str term: search term
         :param str lang: Tweet language.
+        :param BoolType last_session_backstop: If true, search
+            only covers that which wasn't covered in previous run.
+            Use False if starting a new keyword when previous
+            session did not use that keyword.
         :return: NoneType. Modifies self.tweets in place
         """
         query = {"term": [term],
                  "count": 100,
                  "lang": lang,
                  "result_type": "recent"}
-        min_id = self.tweets.max_id
-        if min_id is not None:
-            query.update({"since_id": min_id})
+        if last_session_backstop:
+            min_id = self.tweets.max_id
+            if min_id is not None:
+                query.update({"since_id": min_id})
         tweet_list = TweetList()
         i = 0
         max_iter = 180
@@ -75,7 +107,9 @@ class Preppy(object):
             i += 1
             max_id = tweet_list.min_id
             if max_id is not None:
-                query.update({"max_id": str(max_id - 1)})
+                query.update({
+                    "max_id": str(max_id - 1)
+                })
             response = self.api.GetSearch(**query)
             tweet_list.add_tweets(response)
             n2 = len(tweet_list)
@@ -95,7 +129,13 @@ class Preppy(object):
         :return: NoneType
         """
         output = self.as_dict
-        write_json(output, SESSION_FILE)
+        write_json(output, SESSION_FILE_NAME)
+        return SESSION_FILE_NAME
+
+    def cleanup_session(self):
+        session_file_name = self.write_session_file()
+        backup_session(self.backups_dir, session_file_name)
+        cull_old_files(self.backups_dir)
 
 
 class TweetList(object):
@@ -239,9 +279,13 @@ class TweetList(object):
 
 
 if __name__ == "__main__":
-    Session = Preppy(session_file_name="preppy_session.json")
-    print("There are {:d} tweets. Retrieving more tweets...".format(Session.tweets.n))
-    Session.get_more_tweets("Truvada")
-    print("There are {:d} tweets now".format(Session.tweets.n))
-    print("Of those, {:d} are geo-tagged".format(Session.tweets.n_geotagged))
+    try:
+        input_json = sys.argv[1]
+        d = read_json(input_json)
+        termlist = d["TERMS"]
+    except KeyError:
+        termlist = ["Truvada"]
+    Session = Preppy(try_default_session=True)
+    for term in termlist:
+        Session.get_more_tweets(term, lsb=True)
     Session.tweets.export_geotagged_tweets()

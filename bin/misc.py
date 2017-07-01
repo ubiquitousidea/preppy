@@ -1,28 +1,80 @@
 from twitter.api import Api
 import json
+import time
 import shutil
-from contextlib import contextmanager
 import os
+import uuid
+from contextlib import contextmanager
 
 
 DATE_FORMAT = "%Y-%m-%d"
 CONFIG = "./config.json"
-SESSION_FILE = "preppy_session.json"
+SESSION_FILE_NAME = "preppy_session.json"
 
 
 @contextmanager
-def cd(newdir):
+def cd(new_directory=None):
     """
     From Stack Exchange example
     https://stackoverflow.com/questions/431684/how-do-i-cd-in-python
-    :param newdir: Directory to change into
+    :param new_directory: Directory to change into
     """
-    prevdir = os.getcwd()
-    os.chdir(os.path.expanduser(newdir))
+    if new_directory is None:
+        new_directory = "."
+    previous_directory = os.getcwd()
+    if not os.path.isdir(new_directory):
+        os.mkdir(new_directory)
+    new_directory = os.path.expanduser(new_directory)
+    os.chdir(new_directory)
     try:
         yield
     finally:
-        os.chdir(prevdir)
+        os.chdir(previous_directory)
+
+
+def date_modified(file_path):
+    try:
+        return time.ctime(os.path.getmtime(file_path))
+    except:
+        return None
+
+
+def cull_old_files(_dir=None, n_keep=10):
+    """
+    #--------------------------------------------------------- a warning --
+    # - Warning, this function contains a call to os.remove(). ------------
+    # --- Use with caution. -----------------------------------------------
+    #----------------------------------------------------------------------
+    Remove all but the 10 newest files in a directory
+    :param _dir: Directory to cull
+    :return: NoneType
+    """
+    with cd(_dir):
+        file_list = os.listdir(".")
+        file_list.sort(key=date_modified)
+        files_to_cull = file_list[:-n_keep]  # Take all but the last 10 files
+        for file_path in files_to_cull:
+            os.remove(file_path)
+
+
+def backup_session(destination_dir, file_name):
+    """
+    Copy the latest session file into the
+        backup directory and rename with
+        sequentially id
+    :param destination_dir: the directory into which the
+        backed up session file will be placed
+    :param file_name: path to file
+    :return:
+    """
+    if not os.path.isfile(file_name):
+        raise IOError("Could not find file named {:s}".format(file_name))
+    if not os.path.isdir(destination_dir):
+        os.mkdir(destination_dir)
+    basename, extension = os.path.splitext(file_name)
+    uid = "_" + str(uuid.uuid1())
+    destination = os.path.join(destination_dir, basename + uid + extension)
+    shutil.copy(file_name, destination)
 
 
 def get_api(config_file=CONFIG):
