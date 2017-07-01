@@ -46,8 +46,8 @@ class Preppy(object):
         output = self.tweets.as_dict
         return output
 
-    def status_prior(self):
-        print("There are {:d} tweets. Retrieving more tweets...".format(self.tweets.n))
+    def status_prior(self, _term):
+        print("There are {:d} tweets. Retrieving more tweets related to {:s}".format(self.tweets.n, _term))
 
     def status_posterior(self):
         print("There are {:d} tweets now".format(self.tweets.n))
@@ -74,10 +74,9 @@ class Preppy(object):
             See self.sequentially_search() docstring
         :return: NoneType
         """
-        self.status_prior()
+        self.status_prior(term)
         self.sequentially_search(term, last_session_backstop=lsb)
         self.status_posterior()
-        self.cleanup_session()
 
     def sequentially_search(self, term, lang='en',
                             last_session_backstop=False):
@@ -287,5 +286,6 @@ if __name__ == "__main__":
         termlist = ["Truvada"]
     Session = Preppy(try_default_session=True)
     for term in termlist:
-        Session.get_more_tweets(term, lsb=True)
+        Session.get_more_tweets(term, lsb=False)
     Session.tweets.export_geotagged_tweets()
+    Session.cleanup_session()
