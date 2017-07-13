@@ -277,10 +277,20 @@ class TweetList(object):
         return id_list
 
 
+class ReportWriter(object):
+    def __init__(self, preppy):
+        assert isinstance(preppy, Preppy)
+        self.p = preppy
+
+    def how_many_geotagged(self):
+        # Do this
+        return self.p.tweets.n_geotagged
+
+
+
 if __name__ == "__main__":
     try:
-        input_json = sys.argv[1]
-        d = read_json(input_json)
+        d = read_json(sys.argv[1])
         termlist = d["TERMS"]
     except KeyError:
         termlist = ["Truvada"]
