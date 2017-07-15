@@ -10,14 +10,11 @@ the language because of the Tornado and Scikit-Learn packages.
 
 import sys
 from twitter.models import Status
-from misc import (
+from pandas import DataFrame
+from .misc import (
     get_api, read_json, write_json, SESSION_FILE_NAME,
     cull_old_files, backup_session
 )
-
-
-TWEETS = "tweets"
-IDLIST = "index_list"
 
 
 class Preppy(object):
@@ -278,14 +275,33 @@ class TweetList(object):
 
 
 class ReportWriter(object):
-    def __init__(self, preppy):
-        assert isinstance(preppy, Preppy)
-        self.p = preppy
+    def __init__(self, tweets):
+        assert isinstance(tweets, TweetList)
+        self.tweets = tweets
 
     def how_many_geotagged(self):
-        # Do this
-        return self.p.tweets.n_geotagged
+        return self.tweets.n_geotagged
 
+    @property
+    def geotagged(self):
+        """
+        Returns a dictionary of tweets
+        :return: dict of twitter.Status objects
+        """
+        return self.tweets.geotagged()
+
+    @property
+    def table(self):
+        """
+        Return a table of geotagged tweets with columns:
+            0: tweet ID string
+            1: state
+            2: tweet text
+            3: state political affiliation
+        :return: pandas.DataFrame
+        """
+
+        return []
 
 
 if __name__ == "__main__":
