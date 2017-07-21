@@ -10,7 +10,8 @@ the language because of the Tornado and Scikit-Learn packages.
 """
 
 from twitter.models import Status
-from misc import (
+from numpy.random import choice
+from .misc import (
     get_api, read_json, write_json,
     backup_session, make_list,
     SESSION_FILE_NAME, cull_old_files
@@ -20,7 +21,8 @@ from misc import (
 class Preppy(object):
     def __init__(self, session_file_name=None,
                  try_default_session=True,
-                 custom_backup_dir=None):
+                 custom_backup_dir=None,
+                 config_file=None):
         """
         Return an instance of Preppy class
         :param str session_file_name: Name of a session file (optional)
@@ -32,7 +34,7 @@ class Preppy(object):
         else:
             self.tweets = TweetList()
         self.backups_dir = custom_backup_dir if custom_backup_dir else "backups"
-        self.api = get_api()
+        self.api = get_api(config_file)
 
     @property
     def as_dict(self):
@@ -174,6 +176,9 @@ class TweetList(object):
                            for id_str, tweet
                            in tweets.items()}
 
+    def __getitem__(self, i):
+        return self.tweets[i]
+
     @classmethod
     def from_dict(cls, _d):
         """
@@ -201,6 +206,12 @@ class TweetList(object):
         _d = read_json(path)
         if _d:
             return cls.from_dict(_d)
+
+    @property
+    def id_list(self):
+        ids = list(self.tweets.keys())
+        ids.sort()
+        return ids
 
     @property
     def as_dict(self):
@@ -338,10 +349,6 @@ class ReportWriter(object):
 
         return []
 
-
-if __name__ == "__main__":
-    termlist = ["Truvada", "#PrEP"]
-    Session = Preppy()
-    Session.get_more_tweets(termlist)
-    Session.tweets.export_geotagged_tweets()
-    Session.cleanup_session()
+    def get_random_tweet(self):
+        id_str = choice(self.tweets.id_list)
+        return self.tweets[id_str]

@@ -10,7 +10,7 @@ from contextlib import contextmanager
 
 DT_FORMATS = {
     "TWITTER": "%Y-%m-%d",
-    "BACKUPS": "%Y%m%d%H%M%S%f"
+    "BACKUPS": "%Y_%m_%d_%H_%M_%S_%f"
 }
 CONFIG = "./config.json"
 SESSION_FILE_NAME = "preppy_session.json"
