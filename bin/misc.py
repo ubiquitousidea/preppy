@@ -12,7 +12,6 @@ DT_FORMATS = {
     "TWITTER": "%Y-%m-%d",
     "BACKUPS": "%Y_%m_%d_%H_%M_%S_%f"
 }
-CONFIG = "./config.json"
 SESSION_FILE_NAME = "preppy_session.json"
 now = datetime.datetime.now
 
@@ -98,7 +97,7 @@ def date_string(fmt=None):
     return now().strftime(fmt)
 
 
-def get_api(config_file=CONFIG):
+def get_api(config_file):
     """
     Instantiate a twitter.api.Api object
         from python-twitter package.

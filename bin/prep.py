@@ -19,21 +19,20 @@ from .misc import (
 
 
 class Preppy(object):
-    def __init__(self, session_file_name=None,
-                 try_default_session=True,
-                 custom_backup_dir=None,
+    def __init__(self, session_file_path,
+                 backup_dir=None,
                  config_file=None):
         """
         Return an instance of Preppy class
-        :param str session_file_name: Name of a session file (optional)
+        :param str session_file_path: Name of a session file (optional)
         """
-        if session_file_name:
-            self.tweets = TweetList.from_session_file(session_file_name)
-        elif try_default_session:
-            self.tweets = TweetList.from_session_file("preppy_session.json")
+        self.session_file_path = session_file_path
+        if session_file_path:
+            self.tweets = TweetList.from_session_file(
+                self.session_file_path)
         else:
             self.tweets = TweetList()
-        self.backups_dir = custom_backup_dir if custom_backup_dir else "backups"
+        self.backups_dir = backup_dir
         self.api = get_api(config_file)
 
     @property
@@ -146,12 +145,11 @@ class Preppy(object):
         :return: NoneType
         """
         output = self.as_dict
-        write_json(output, SESSION_FILE_NAME)
-        return SESSION_FILE_NAME
+        write_json(output, self.session_file_path)
 
     def cleanup_session(self):
-        session_file_name = self.write_session_file()
-        backup_session(self.backups_dir, session_file_name)
+        self.write_session_file()
+        backup_session(self.backups_dir, self.session_file_path)
         cull_old_files(self.backups_dir)
 
 
