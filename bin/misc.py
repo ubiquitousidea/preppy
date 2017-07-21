@@ -4,12 +4,17 @@ import time
 import shutil
 import os
 import uuid
+import datetime
 from contextlib import contextmanager
 
 
-DATE_FORMAT = "%Y-%m-%d"
+DT_FORMATS = {
+    "TWITTER": "%Y-%m-%d",
+    "BACKUPS": "%Y%m%d%H%M%S%f"
+}
 CONFIG = "./config.json"
 SESSION_FILE_NAME = "preppy_session.json"
+now = datetime.datetime.now
 
 
 @contextmanager
@@ -61,20 +66,36 @@ def backup_session(destination_dir, file_name):
     """
     Copy the latest session file into the
         backup directory and rename with
-        sequentially id
+        sequential id
     :param destination_dir: the directory into which the
         backed up session file will be placed
     :param file_name: path to file
     :return:
     """
     if not os.path.isfile(file_name):
-        raise IOError("Could not find file named {:s}".format(file_name))
+        msg = "Could not find file named {:s}"
+        raise IOError(msg.format(file_name))
     if not os.path.isdir(destination_dir):
         os.mkdir(destination_dir)
     basename, extension = os.path.splitext(file_name)
-    uid = "_" + str(uuid.uuid1())
-    destination = os.path.join(destination_dir, basename + uid + extension)
+    uid = "_" + date_string()
+    destination = os.path.join(
+        destination_dir,
+        basename + uid + extension
+    )
     shutil.copy(file_name, destination)
+
+
+def date_string(fmt=None):
+    """
+    Return a string of numbers representing
+    the date and time (to the microsecond)
+    :param fmt: date time formatting string (see strftime)
+    :return: str
+    """
+    if fmt is None:
+        fmt = DT_FORMATS["BACKUPS"]
+    return now().strftime(fmt)
 
 
 def get_api(config_file=CONFIG):
@@ -135,7 +156,7 @@ def read_json(fn=None):
     return d
 
 
-def minidate(dt, fmt=DATE_FORMAT):
+def minidate(dt, fmt=DT_FORMATS["TWITTER"]):
     """
     Convert a datetime object into a string
         Save some lines of code because
@@ -148,3 +169,18 @@ def minidate(dt, fmt=DATE_FORMAT):
         Twitter, by default.
     """
     return dt.strftime(fmt)
+
+
+def is_list(v):
+    return isinstance(v, (list, tuple))
+
+
+def make_list(v):
+    """
+    Make the argument into a list if it
+    isn't already a list, then return it.
+    """
+    if is_list(v):
+        return v
+    else:
+        return [v]

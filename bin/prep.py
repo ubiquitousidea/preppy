@@ -1,3 +1,4 @@
+#! /Users/danielsnyder/anaconda/bin/python
 """
 Initially, a twitter listener to determine the magnitude and location of public
 discussion of PrEP (Truvada) on Twitter.
@@ -11,10 +12,11 @@ the language because of the Tornado and Scikit-Learn packages.
 import sys
 from twitter.models import Status
 from pandas import DataFrame
-from .misc import (
+from misc import (
     get_api, read_json, write_json, SESSION_FILE_NAME,
-    cull_old_files, backup_session
+    cull_old_files, backup_session, make_list
 )
+
 
 
 class Preppy(object):
@@ -44,7 +46,7 @@ class Preppy(object):
         return output
 
     def status_prior(self, _term):
-        print("There are {:d} tweets. Retrieving more tweets related to {:s}".format(self.tweets.n, _term))
+        print("There are {:d} tweets. Retrieving more tweets related to {:}".format(self.tweets.n, _term))
 
     def status_posterior(self):
         print("There are {:d} tweets now".format(self.tweets.n))
@@ -75,11 +77,11 @@ class Preppy(object):
         self.sequentially_search(term, last_session_backstop=lsb)
         self.status_posterior()
 
-    def sequentially_search(self, term, lang='en',
+    def sequentially_search(self, terms, lang='en',
                             last_session_backstop=False):
         """
         Sequentially search for term $term
-        :param str term: search term
+        :param {tuple, list} terms: list of search terms
         :param str lang: Tweet language.
         :param BoolType last_session_backstop: If true, search
             only covers that which wasn't covered in previous run.
@@ -87,17 +89,39 @@ class Preppy(object):
             session did not use that keyword.
         :return: NoneType. Modifies self.tweets in place
         """
-        query = {"term": [term],
-                 "count": 100,
-                 "lang": lang,
-                 "result_type": "recent"}
-        if last_session_backstop:
-            min_id = self.tweets.max_id
+        terms = make_list(terms)
+        min_id = self.tweets.max_id \
+            if last_session_backstop else None
+        query = {}
+        for term in terms:
+            query[term] = {
+                "term": term,
+                "count": 100,
+                "lang": lang,
+                "result_type": "recent"
+            }
             if min_id is not None:
                 query.update({"since_id": min_id})
-        tweet_list = TweetList()
+        for term in terms:
+            tweet_list = self.search_single_term(
+                query[term]
+            )
+            n_added = self.add_tweets(tweet_list)
+            print("Added {:d} tweets".format(n_added))
+
+    def search_single_term(self, query):
+        """
+        Search using a query dictionary
+
+        This method actually contains the
+            twitter.Api.GetSearch call
+
+        :param query: dictionary of search arguments
+        :return: TweetList object
+        """
         i = 0
         max_iter = 180
+        tweet_list = TweetList()
         while i < max_iter:
             n1 = len(tweet_list)
             i += 1
@@ -111,7 +135,7 @@ class Preppy(object):
             n2 = len(tweet_list)
             if n1 == n2:
                 break
-        self.add_tweets(tweet_list)
+        return tweet_list
 
     def add_tweets(self, tweetlist):
         len1 = len(self.tweets)
@@ -156,16 +180,32 @@ class TweetList(object):
                            in tweets.items()}
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, _d):
+        """
+        Instantiate this class using a dict of tweets
+        :param _d: dict of dicts;
+            {id_str: tweet dict,...}
+        :return: an instance of this class
+        """
         _obj = cls()
-        _obj.tweets.update({k: Status(**v) for k, v in d.items()})
+        _obj.tweets.update({k: Status(**v)
+                            for k, v
+                            in _d.items()})
         return _obj
 
     @classmethod
-    def from_session_file(cls, fname):
-        d = read_json(fname)
-        if d:
-            return cls.from_dict(d)
+    def from_session_file(
+            cls, path=None):
+        """
+        Instantiate this class using a session file
+        :param path: path to a valid json file
+        :return: An instance of this class
+        """
+        if path is None:
+            path = SESSION_FILE_NAME
+        _d = read_json(path)
+        if _d:
+            return cls.from_dict(_d)
 
     @property
     def as_dict(self):
@@ -305,13 +345,8 @@ class ReportWriter(object):
 
 
 if __name__ == "__main__":
-    try:
-        d = read_json(sys.argv[1])
-        termlist = d["TERMS"]
-    except KeyError:
-        termlist = ["Truvada"]
-    Session = Preppy(try_default_session=True)
-    for term in termlist:
-        Session.get_more_tweets(term, lsb=False)
+    termlist = ["Truvada", "#PrEP"]
+    Session = Preppy()
+    Session.get_more_tweets(termlist)
     Session.tweets.export_geotagged_tweets()
     Session.cleanup_session()
