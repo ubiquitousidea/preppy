@@ -9,14 +9,12 @@ user interface to ask questions relevant to HIV researchers. Python chosen as
 the language because of the Tornado and Scikit-Learn packages.
 """
 
-import sys
 from twitter.models import Status
-from pandas import DataFrame
 from misc import (
-    get_api, read_json, write_json, SESSION_FILE_NAME,
-    cull_old_files, backup_session, make_list
+    get_api, read_json, write_json,
+    backup_session, make_list,
+    SESSION_FILE_NAME, cull_old_files
 )
-
 
 
 class Preppy(object):
@@ -92,9 +90,8 @@ class Preppy(object):
         terms = make_list(terms)
         min_id = self.tweets.max_id \
             if last_session_backstop else None
-        query = {}
         for term in terms:
-            query[term] = {
+            query = {
                 "term": term,
                 "count": 100,
                 "lang": lang,
@@ -102,12 +99,10 @@ class Preppy(object):
             }
             if min_id is not None:
                 query.update({"since_id": min_id})
-        for term in terms:
-            tweet_list = self.search_single_term(
-                query[term]
-            )
+            tweet_list = self.search_single_term(query)
             n_added = self.add_tweets(tweet_list)
-            print("Added {:d} tweets".format(n_added))
+            print("Added {:d} tweets related to {:}"
+                  .format(n_added, term))
 
     def search_single_term(self, query):
         """
