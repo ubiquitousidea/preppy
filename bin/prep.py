@@ -1,4 +1,3 @@
-#! /Users/danielsnyder/anaconda/bin/python
 """
 Initially, a twitter listener to determine the magnitude and location of public
 discussion of PrEP (Truvada) on Twitter.
