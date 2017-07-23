@@ -11,6 +11,8 @@ the language because of the Tornado and Scikit-Learn packages.
 
 from twitter.models import Status
 from numpy.random import choice
+from numpy import array, mean, zeros
+from pandas import DataFrame
 from .misc import (
     get_api, read_json, write_json,
     backup_session, make_list,
@@ -170,26 +172,19 @@ class TweetList(object):
         if tweets is None:
             self.tweets = {}
         else:
-            self.tweets = {id_str: Status(**tweet)
+            self.tweets = {id_str: Status.NewFromJsonDict(tweet)
                            for id_str, tweet
                            in tweets.items()}
+        self._metadata = {}
 
     def __getitem__(self, i):
         return self.tweets[i]
 
-    @classmethod
-    def from_dict(cls, _d):
-        """
-        Instantiate this class using a dict of tweets
-        :param _d: dict of dicts;
-            {id_str: tweet dict,...}
-        :return: an instance of this class
-        """
-        _obj = cls()
-        _obj.tweets.update({k: Status(**v)
-                            for k, v
-                            in _d.items()})
-        return _obj
+    def __repr__(self):
+        return str(self.as_dict)
+
+    def __len__(self):
+        return self.n
 
     @classmethod
     def from_session_file(
@@ -203,7 +198,7 @@ class TweetList(object):
             path = SESSION_FILE_NAME
         _d = read_json(path)
         if _d:
-            return cls.from_dict(_d)
+            return cls(_d)
 
     @property
     def id_list(self):
@@ -212,9 +207,15 @@ class TweetList(object):
         return ids
 
     @property
+    def id_list_geo(self):
+        ids = list(self.geotagged().keys())
+        ids.sort()
+        return ids
+
+    @property
     def as_dict(self):
         """
-        Property to return json representation of this class
+        Property to return json representation of this class instance
         The self.tweets is a dict of <twitter.models.Status> objects
         This method converts the Status objects to dictionaries
         :return: dict of dict representations of tweets (Statuses)
@@ -222,12 +223,6 @@ class TweetList(object):
         return {k: v.AsDict()
                 for k, v
                 in self.tweets.items()}
-
-    def __repr__(self):
-        return str(self.as_dict)
-
-    def __len__(self):
-        return self.n
 
     @property
     def n(self):
@@ -256,14 +251,15 @@ class TweetList(object):
                     valid_formats.__str__()))
         return geo_tweets
 
-    def export_geotagged_tweets(self):
+    def export_geotagged_tweets(self, path=None):
+        if path is None:
+            path = "geotagged_tweets.json"
         d = self.geotagged(tweet_format="dict")
-        write_json(d, "geotagged_tweets.json")
+        write_json(d, path)
 
     @property
     def max_id(self):
-        id_strings = list(self.tweets.keys())
-        ids = [int(i) for i in id_strings]
+        ids = [int(i) for i in self.id_list]
         if ids:
             max_id = max(ids)
         else:
@@ -272,8 +268,7 @@ class TweetList(object):
 
     @property
     def min_id(self):
-        id_strings = list(self.tweets.keys())
-        ids = [int(i) for i in id_strings]
+        ids = [int(i) for i in self.id_list]
         if ids:
             min_id = min(ids)
         else:
@@ -320,6 +315,10 @@ class TweetList(object):
 
 class ReportWriter(object):
     def __init__(self, tweets):
+        """
+        Instantiate a ReportWriter using a TweetList
+        :param tweets:
+        """
         assert isinstance(tweets, TweetList)
         self.tweets = tweets
 
@@ -329,7 +328,8 @@ class ReportWriter(object):
     @property
     def geotagged(self):
         """
-        Returns a dictionary of tweets
+        Returns a dictionary of tweets that
+        contain a 'place' attribute
         :return: dict of twitter.Status objects
         """
         return self.tweets.geotagged()
@@ -344,9 +344,107 @@ class ReportWriter(object):
             3: state political affiliation
         :return: pandas.DataFrame
         """
+        tweets = list(self.geotagged.values())
+        tweets.sort(key=lambda tweet: tweet.id)
+        missing = None
 
-        return []
+        def get_id(tweet):
+            try:
+                return tweet.id
+            except AttributeError:
+                return missing
+
+        def get_date(tweet):
+            try:
+                return tweet.created_at
+            except AttributeError:
+                return missing
+
+        def get_user_id(tweet):
+            try:
+                return tweet.user.id
+            except AttributeError:
+                return missing
+
+        def get_text(tweet):
+            try:
+                if tweet.full_text:
+                    return tweet.full_text
+                elif tweet.text:
+                    return tweet.text
+                else:
+                    return missing
+            except AttributeError:
+                return missing
+
+        def get_place(tweet):
+            try:
+                return tweet.place["full_name"]
+            except AttributeError:
+                return missing
+
+        def get_centroid(tweet):
+            try:
+                bounding_box = array(tweet
+                                     .place
+                                     ["bounding_box"]
+                                     ["coordinates"]
+                                     ).squeeze()
+                centroid = bounding_box.mean(axis=0)
+                return centroid
+            except AttributeError:
+                return zeros(2)
+
+        def get_longitude(tweet):
+            try:
+                centroid = get_centroid(tweet)
+                return centroid[0]
+            except AttributeError:
+                return missing
+
+        def get_latitude(tweet):
+            try:
+                centroid = get_centroid(tweet)
+                return centroid[1]
+            except AttributeError:
+                return missing
+
+        def get_country(tweet):
+            assert isinstance(tweet, Status)
+            try:
+                return tweet.place["country"]
+            except AttributeError:
+                return missing
+
+        column_getters = {
+            "id": get_id,
+            "date": get_date,
+            "user": get_user_id,
+            "text": get_text,
+            "place": get_place,
+            "country": get_country,
+            "longitude": get_longitude,
+            "latitude": get_latitude
+        }
+        output_dict = {
+            key: [
+                fn(tweet)
+                for tweet
+                in tweets
+            ]
+            for key, fn
+            in column_getters.items()
+        }
+        return DataFrame.from_dict(output_dict)
+
+    def write_report(self, path):
+        report = self.table
+        report.to_csv(path)
 
     def get_random_tweet(self):
         id_str = choice(self.tweets.id_list)
+        return self.tweets[id_str]
+
+    def get_random_geo_tweet(self):
+        id_str = choice(self.tweets.id_list_geo)
         return self.tweets[id_str]

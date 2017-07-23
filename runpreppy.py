@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-from bin.prep import Preppy
+from bin.prep import Preppy, ReportWriter
 
 
 termlist = ["Truvada", "#PrEP"]
@@ -9,5 +9,6 @@ Session = Preppy(
     backup_dir='./backups'
 )
 Session.get_more_tweets(termlist)
-Session.tweets.export_geotagged_tweets()
+reportwriter = ReportWriter(Session.tweets)
+reportwriter.write_report("geo_tweet_report.csv")
 Session.cleanup_session()
