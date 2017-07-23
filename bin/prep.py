@@ -334,7 +334,7 @@ class ReportWriter(object):
         return self.tweets.geotagged()
 
     @property
-    def table(self):
+    def table_geo(self):
         """
         Return a table of geotagged tweets with columns:
             0: tweet ID string
@@ -436,8 +436,8 @@ class ReportWriter(object):
         }
         return DataFrame.from_dict(output_dict)
 
-    def write_report(self, path):
-        report = self.table
+    def write_report_geo(self, path):
+        report = self.table_geo
         report.to_csv(path)
 
     def get_random_tweet(self):
