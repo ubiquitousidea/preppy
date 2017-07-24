@@ -185,6 +185,8 @@ class TweetList(object):
     def __len__(self):
         return self.n
 
+    # def __iter__(self):
+
     @classmethod
     def from_session_file(
             cls, path=None):
@@ -334,6 +336,12 @@ class ReportWriter(object):
         return self.tweets.geotagged()
 
     @property
+    def table_all(self):
+        tweets = list(self.tweets.tweets.values())
+        tweets.sort(key=lambda tweet: tweet.id)
+        return self.make_table(tweets)
+
+    @property
     def table_geo(self):
         """
         Return a table of geotagged tweets with columns:
@@ -345,6 +353,10 @@ class ReportWriter(object):
         """
         tweets = list(self.geotagged.values())
         tweets.sort(key=lambda tweet: tweet.id)
+        return self.make_table(tweets)
+
+    @staticmethod
+    def make_table(tweets):
         missing = None
 
         def get_id(tweet):
