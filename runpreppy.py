@@ -11,5 +11,6 @@ Session = Preppy(
 Session.get_more_tweets(termlist)
 reportwriter = ReportWriter(Session.tweets)
 reportwriter.write_report_geo("geo_tweet_report.csv")
-# report = ReportWriter.table_all
+report = reportwriter.table_all
+print(report.country.value_counts())
 Session.cleanup_session()

@@ -360,21 +360,15 @@ class ReportWriter(object):
         missing = None
 
         def get_id(tweet):
-            try:
-                return tweet.id
-            except AttributeError:
-                return missing
+            return tweet.id
 
         def get_date(tweet):
-            try:
-                return tweet.created_at
-            except AttributeError:
-                return missing
+            return tweet.created_at
 
         def get_user_id(tweet):
             try:
                 return tweet.user.id
-            except AttributeError:
+            except:
                 return missing
 
         def get_text(tweet):
@@ -385,13 +379,13 @@ class ReportWriter(object):
                     return tweet.text
                 else:
                     return missing
-            except AttributeError:
+            except:
                 return missing
 
         def get_place(tweet):
             try:
                 return tweet.place["full_name"]
-            except AttributeError:
+            except:
                 return missing
 
         def get_centroid(tweet):
@@ -403,28 +397,28 @@ class ReportWriter(object):
                                      ).squeeze()
                 centroid = bounding_box.mean(axis=0)
                 return centroid
-            except AttributeError:
+            except:
                 return zeros(2)
 
         def get_longitude(tweet):
             try:
                 centroid = get_centroid(tweet)
                 return centroid[0]
-            except AttributeError:
+            except:
                 return missing
 
         def get_latitude(tweet):
             try:
                 centroid = get_centroid(tweet)
                 return centroid[1]
-            except AttributeError:
+            except:
                 return missing
 
         def get_country(tweet):
             assert isinstance(tweet, Status)
             try:
                 return tweet.place["country"]
-            except AttributeError:
+            except:
                 return missing
 
         column_getters = {
