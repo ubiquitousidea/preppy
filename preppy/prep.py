@@ -316,6 +316,21 @@ class TweetList(object):
             self.add_tweets(tweets.tweets)
         return id_list
 
+    def record_metadata(self, id_str, param, value):
+        """
+        Record a piece of metadata associated with a tweet
+            Example of metadata parameter could be:
+                is_related_to_prep
+                is_related_to_truvada
+        :param id_str: the id of the tweet
+        :param param: the name of the parameter to record
+        :param value: the value of the parameter to record
+        """
+        assert id_str in self.tweets
+        if id_str not in self._metadata:
+            self._metadata[id_str] = {}
+        self._metadata[id_str].update({param: value})
+
 
 class ReportWriter(object):
     def __init__(self, tweets):
