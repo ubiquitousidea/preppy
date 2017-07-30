@@ -8,9 +8,9 @@ user interface to ask questions relevant to HIV researchers. Python chosen as
 the language because of the Tornado and Scikit-Learn packages.
 """
 
-from twitter.models import Status
+from twitter import Status
 from numpy.random import choice
-from numpy import array, mean, zeros
+from numpy import array, zeros
 from pandas import DataFrame
 from .misc import (
     get_api, read_json, write_json,
