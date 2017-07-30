@@ -3,7 +3,6 @@ import json
 import time
 import shutil
 import os
-import uuid
 import datetime
 from contextlib import contextmanager
 

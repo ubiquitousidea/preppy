@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-from bin.prep import Preppy, ReportWriter
+from preppy.prep import Preppy, ReportWriter
 
 
 termlist = ["Truvada", "#PrEP"]

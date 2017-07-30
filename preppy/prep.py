@@ -177,7 +177,10 @@ class TweetList(object):
         self._metadata = {}
 
     def __getitem__(self, i):
-        return self.tweets[i]
+        try:
+            return self.tweets[i]
+        except KeyError:
+            raise KeyError("Key {:} not found in TweetList".format(i))
 
     def __repr__(self):
         return str(self.as_dict)
@@ -192,6 +195,10 @@ class TweetList(object):
             cls, path=None):
         """
         Instantiate this class using a session file
+        Format 1:
+            Session files are JSON files whose primary
+            key is tweet id string and whose value is
+            a dict representation of a tweet
         :param path: path to a valid json file
         :return: An instance of this class
         """
@@ -237,19 +244,15 @@ class TweetList(object):
         valid_formats = ("Status", "dict")
         assert tweet_format in valid_formats
         if tweet_format == "Status":
-            geo_tweets = {id_str: tweet
-                          for id_str, tweet
-                          in self.tweets.items()
-                          if "place" in tweet.AsDict()}
+            def fn(_tweet):
+                return _tweet
         elif tweet_format == "dict":
-            geo_tweets = {id_str: tweet.AsDict()
-                          for id_str, tweet
-                          in self.tweets.items()
-                          if "place" in tweet.AsDict()}
-        else:
-            raise ValueError(
-                "Format must be in {:s}".format(
-                    valid_formats.__str__()))
+            def fn(_tweet):
+                return _tweet.AsDict()
+        geo_tweets = {id_str: fn(tweet)
+                      for id_str, tweet
+                      in self.tweets.items()
+                      if "place" in tweet.AsDict()}
         return geo_tweets
 
     def export_geotagged_tweets(self, path=None):
@@ -421,16 +424,16 @@ class ReportWriter(object):
             except:
                 return missing
 
-        column_getters = {
-            "id": get_id,
-            "date": get_date,
-            "user": get_user_id,
-            "text": get_text,
-            "place": get_place,
-            "country": get_country,
-            "longitude": get_longitude,
-            "latitude": get_latitude
-        }
+        column_getters = (
+            ("id", get_id),
+            ("date", get_date),
+            ("user", get_user_id),
+            ("text", get_text),
+            ("place", get_place),
+            ("country", get_country),
+            ("longitude", get_longitude),
+            ("latitude", get_latitude)
+        )
         output_dict = {
             key: [
                 fn(tweet)
@@ -438,7 +441,7 @@ class ReportWriter(object):
                 in tweets
             ]
             for key, fn
-            in column_getters.items()
+            in column_getters
         }
         return DataFrame.from_dict(output_dict)
 
