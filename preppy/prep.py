@@ -358,6 +358,13 @@ class ReportWriter(object):
         tweets.sort(key=lambda tweet: tweet.id)
         return self.make_table(tweets)
 
+    def country_counts(self, min_count=3):
+        table = self.table_geo
+        counts = table.country.value_counts()
+        if min_count > 0:
+            counts = counts[counts >= min_count]
+        return counts
+
     @staticmethod
     def make_table(tweets):
         """
