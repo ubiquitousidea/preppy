@@ -360,6 +360,11 @@ class ReportWriter(object):
 
     @staticmethod
     def make_table(tweets):
+        """
+        Return a pandas.DataFrame table of tweet information
+        :param tweets: list of Tweets (twitter.Status instances)
+        :return: pandas.DataFrame
+        """
         missing = None
 
         def get_id(tweet):
@@ -393,11 +398,11 @@ class ReportWriter(object):
 
         def get_centroid(tweet):
             try:
-                bounding_box = array(tweet
-                                     .place
-                                     ["bounding_box"]
-                                     ["coordinates"]
-                                     ).squeeze()
+                bounding_box = array(
+                    tweet.place
+                    ["bounding_box"]
+                    ["coordinates"]
+                    ).squeeze()
                 centroid = bounding_box.mean(axis=0)
                 return centroid
             except:
