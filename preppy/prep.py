@@ -8,6 +8,7 @@ user interface to ask questions relevant to HIV researchers. Python chosen as
 the language because of the Tornado and Scikit-Learn packages.
 """
 
+import os
 from twitter import Status
 from numpy.random import choice
 from numpy import array, zeros
@@ -388,6 +389,9 @@ class ReportWriter(object):
         :return: pandas.DataFrame
         """
         missing = None
+        valid_state_codes = read_json(
+            "{:}/state_codes.json".format(os.path.dirname(__file__)))\
+            ["valid_state_codes"]
 
         def get_id(tweet):
             return tweet.id
@@ -451,6 +455,35 @@ class ReportWriter(object):
             except:
                 return missing
 
+        def get_state(tweet):
+            """
+            Get the state in which the tweet originated
+            Currently relies upon the JSON response from twitter API
+            Consider future use of Google reverse geocoding API
+
+            Information page:
+            https://developers.google.com/maps/documentation/geocoding/start
+
+            Example:
+            https://maps.googleapis.com/maps/api/geocode/json?latlng=40.714224,-73.961452&key=...
+
+            :param tweet:
+            :return:
+            """
+            assert isinstance(tweet, Status)
+            state_code = missing
+            country_code = tweet.place["country_code"]
+            place_type = tweet.place["place_type"]
+            if country_code == "US" and place_type == "city":
+                full_name = tweet.place["full_name"]
+                state_code = full_name.split(",")[-1].strip().upper()
+                state_code = state_code if state_code in valid_state_codes else missing
+            else:
+                pass
+            return state_code
+
+
+
         column_getters = (
             ("id", get_id),
             ("date", get_date),
@@ -459,7 +492,8 @@ class ReportWriter(object):
             ("place", get_place),
             ("country", get_country),
             ("longitude", get_longitude),
-            ("latitude", get_latitude)
+            ("latitude", get_latitude),
+            ("state", get_state)
         )
         output_dict = {
             key: [
