@@ -381,6 +381,20 @@ class ReportWriter(object):
             counts = counts[counts >= min_count]
         return counts
 
+    def state_counts(self, min_count=3):
+        table = self.table_geo
+        counts = table.state.value_counts()
+        if min_count > 0:
+            counts = counts[counts >= min_count]
+        return counts
+
+    def unique_states(self):
+        table = self.table_geo
+        state_set = set(table.state)
+        state_set.difference_update([None])
+        states = sorted(list(state_set))
+        return states
+
     @staticmethod
     def make_table(tweets):
         """
@@ -482,7 +496,8 @@ class ReportWriter(object):
                 pass
             return state_code
 
-
+        def get_region(tweet):
+            return missing
 
         column_getters = (
             ("id", get_id),
@@ -493,8 +508,12 @@ class ReportWriter(object):
             ("country", get_country),
             ("longitude", get_longitude),
             ("latitude", get_latitude),
-            ("state", get_state)
+            ("state", get_state),
+            ("us_region", get_region)
         )
+        column_order = [column_getter[0]
+                        for column_getter
+                        in column_getters]
         output_dict = {
             key: [
                 fn(tweet)
@@ -504,7 +523,13 @@ class ReportWriter(object):
             for key, fn
             in column_getters
         }
-        return DataFrame.from_dict(output_dict)
+        output = DataFrame.from_dict(output_dict)
+
+        # re-order the columns since data frame
+        # was instantiated from a dict
+        output = output[column_order]
+
+        return output
 
     def write_report_geo(self, path):
         report = self.table_geo

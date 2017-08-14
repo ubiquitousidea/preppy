@@ -30,4 +30,8 @@ with cd(wd):
     reportwriter = ReportWriter(Session.tweets)
     reportwriter.write_report_geo("geo_tweet_report.csv")
     print(reportwriter.country_counts())
+    print(reportwriter.state_counts())
+    unique_states = reportwriter.unique_states()
+    print(unique_states)
+    print("There are {:} unique states".format(unique_states.__len__()))
     Session.cleanup_session()
