@@ -16,8 +16,12 @@ from pandas import DataFrame
 from .misc import (
     get_api, read_json, write_json,
     backup_session, make_list,
-    SESSION_FILE_NAME, cull_old_files
+    SESSION_FILE_NAME, cull_old_files,
+    get_sentiment, CodeBook, MISSING
 )
+
+
+CODE_BOOK = CodeBook()
 
 
 class Preppy(object):
@@ -141,6 +145,55 @@ class Preppy(object):
         len2 = len(self.tweets)
         return len2 - len1
 
+    def encode_sentiment(self, user_id, only_geo=True, max_tweets=100):
+        """
+        User interaction.
+        Iterate through the tweets and ask user to rate
+            positive, negative, or neutral
+        Record the tweet sentiment as an item of metadata
+            in self._metadata
+        :param {int, str} user_id: The identifier assigned
+            to a user when performing this variable encoding
+        :param BoolType only_geo: if True, only iterate
+            through the tweets which are geotagged
+        :param int max_tweets: How may tweets to encode before retiring
+        :return: NoneType. Modifies self._metadata in place.
+        """
+        variable_name = "SENTIMENT"
+        assert CODE_BOOK.has_variable(variable_name)
+        possible_values = CODE_BOOK.possible_values(variable_name)
+        # Concatentate the variable name with the user id
+        variable_name_uid = "SENTIMENT_{:}".format(user_id)
+
+        if only_geo:
+            tweets = list(self.tweets.geotagged().values())
+        else:
+            tweets = self.tweets.as_list()
+        tweet_count = 0
+        for tweet in tweets:
+            sentiment = MISSING
+            max_iter = 10
+            i = 0
+            while i < max_iter:
+                i += 1
+                sentiment = get_sentiment(tweet, api=self.api)
+                if sentiment in possible_values:
+                    break
+                else:
+                    print("Possible values: {:}".format(
+                        CODE_BOOK.__getattribute__(variable_name)
+                    ))
+            self.tweets.record_metadata(
+                id_str=tweet.id_str,
+                param=variable_name_uid,
+                value=sentiment)
+
+            tweet_count+= 1
+
+            if tweet_count > max_tweets:
+                break
+
+
     def write_session_file(self):
         """
         Write a json file of the current session
@@ -162,12 +215,14 @@ class TweetList(object):
     not present, and writing files.
     """
 
-    def __init__(self, tweets=None):
+    def __init__(self, tweets=None, metadata=None):
         """
         Return an instance of the TweetList class
         :param tweets: dict
             {'tweet_id_01': {tweet dict},
              'tweet_id_02': {tweet dict},...}
+        :param metadata: dict
+            {'tweet_id_01': {metadata dict},...}
         """
         if tweets is None:
             self.tweets = {}
@@ -175,7 +230,11 @@ class TweetList(object):
             self.tweets = {id_str: Status.NewFromJsonDict(tweet)
                            for id_str, tweet
                            in tweets.items()}
-        self._metadata = {}
+        if metadata is None:
+            self._metadata = {}
+        else:
+            # TODO: Add mistake proofing
+            self._metadata = metadata
 
     def __getitem__(self, i):
         try:
@@ -192,22 +251,30 @@ class TweetList(object):
     # def __iter__(self):
 
     @classmethod
-    def from_session_file(
-            cls, path=None):
+    def from_session_file(cls, path=None):
         """
         Instantiate this class using a session file
         Format 1:
             Session files are JSON files whose primary
             key is tweet id string and whose value is
             a dict representation of a tweet
+        Format 2:
+            Session file contains two primary keys: ("metadata", "tweets")
+            The "tweets" value is a dict in Format 1
+            The "metadata" value is a dict of metadata
         :param path: path to a valid json file
         :return: An instance of this class
         """
         if path is None:
             path = SESSION_FILE_NAME
         _d = read_json(path)
-        if _d:
-            return cls(_d)
+        if _d is not None:
+            if "metadata" in _d.keys() and len(_d.keys()) == 2:
+                return cls(_d["tweets"], _d["metadata"])
+            elif len(_d.keys()) > 2:
+                return cls(_d)
+            else:
+                raise IOError("Unable to parse session file")
 
     @property
     def id_list(self):
@@ -229,9 +296,19 @@ class TweetList(object):
         This method converts the Status objects to dictionaries
         :return: dict of dict representations of tweets (Statuses)
         """
-        return {k: v.AsDict()
-                for k, v
-                in self.tweets.items()}
+        output_tweets = {
+            k: v.AsDict()
+            for k, v
+            in self.tweets.items()
+        }
+        output = {"tweets": output_tweets,
+                  "metadata": self._metadata}
+        return output
+
+    def as_list(self):
+        output = list(self.tweets.values())
+        output.sort(key=lambda tweet: tweet.id)
+        return output
 
     @property
     def n(self):
@@ -339,8 +416,17 @@ class ReportWriter(object):
         Instantiate a ReportWriter using a TweetList
         :param tweets:
         """
-        assert isinstance(tweets, TweetList)
+        if isinstance(tweets, TweetList):
+            tweets = tweets
+        elif isinstance(tweets, Preppy):
+            tweets = tweets.tweets
+        else:
+            raise TypeError(
+                "Argument must be either a Preppy "
+                "session or a TweetList"
+            )
         self.tweets = tweets
+        self.table = self.make_table()
 
     def how_many_geotagged(self):
         return self.tweets.n_geotagged
@@ -375,34 +461,37 @@ class ReportWriter(object):
         return self.make_table(tweets)
 
     def country_counts(self, min_count=3):
-        table = self.table_geo
+        table = self.table
         counts = table.country.value_counts()
         if min_count > 0:
             counts = counts[counts >= min_count]
         return counts
 
     def state_counts(self, min_count=3):
-        table = self.table_geo
+        table = self.table
         counts = table.state.value_counts()
         if min_count > 0:
             counts = counts[counts >= min_count]
         return counts
 
     def unique_states(self):
-        table = self.table_geo
+        table = self.table
         state_set = set(table.state)
         state_set.difference_update([None])
         states = sorted(list(state_set))
         return states
 
-    @staticmethod
-    def make_table(tweets):
+    def make_table(self, tweets=None):
         """
         Return a pandas.DataFrame table of tweet information
         :param tweets: list of Tweets (twitter.Status instances)
         :return: pandas.DataFrame
         """
-        missing = None
+        if tweets is None:
+            tweets = list(self.tweets.tweets.values())
+            tweets.sort(key=lambda tweet: tweet.id)
+
+        missing = MISSING
         valid_state_codes = read_json(
             "{:}/state_codes.json".format(os.path.dirname(__file__)))\
             ["valid_state_codes"]
@@ -486,7 +575,10 @@ class ReportWriter(object):
             """
             assert isinstance(tweet, Status)
             state_code = missing
-            country_code = tweet.place["country_code"]
+            try:
+                country_code = tweet.place["country_code"]
+            except TypeError:
+                return missing
             place_type = tweet.place["place_type"]
             if country_code == "US" and place_type == "city":
                 full_name = tweet.place["full_name"]
@@ -497,6 +589,11 @@ class ReportWriter(object):
             return state_code
 
         def get_region(tweet):
+            """
+            Get the region of the US a tweet originated from
+            :param tweet:
+            :return:
+            """
             return missing
 
         column_getters = (
@@ -524,11 +621,7 @@ class ReportWriter(object):
             in column_getters
         }
         output = DataFrame.from_dict(output_dict)
-
-        # re-order the columns since data frame
-        # was instantiated from a dict
         output = output[column_order]
-
         return output
 
     def write_report_geo(self, path):

@@ -1,4 +1,5 @@
 from twitter.api import Api
+from twitter import Status
 import json
 import time
 import shutil
@@ -7,10 +8,37 @@ import datetime
 from contextlib import contextmanager
 
 
+MISSING = None
+
 DT_FORMATS = {
     "TWITTER": "%Y-%m-%d",
     "BACKUPS": "%Y_%m_%d_%H_%M_%S_%f"
 }
+
+
+class CodeBook:
+    def __init__(self):
+        pass
+
+    SENTIMENT = {
+        "1": "Negative sentiment",
+        "2": "Neutral sentiment",
+        "3": "Positive sentiment"
+    }
+
+    def has_variable(self, var_name):
+        try:
+            _ = self.__getattribute__(var_name)
+            return True
+        except AttributeError:
+            return False
+
+    def possible_values(self, var_name):
+        output = list(self.__getattribute__(var_name).keys())
+        output.sort()
+        return output
+
+
 SESSION_FILE_NAME = "preppy_session.json"
 now = datetime.datetime.now
 
@@ -58,6 +86,39 @@ def cull_old_files(_dir=None, n_keep=10):
         files_to_cull = file_list[:-n_keep]  # Take all but the last 10 files
         for file_path in files_to_cull:
             os.remove(file_path)
+
+
+def get_text_from_api(tweet, api):
+    assert isinstance(tweet, Status)
+    assert isinstance(api, Api)
+    tweet = api.GetStatus(tweet.id)
+    return tweet.full_text
+
+
+def get_sentiment(tweet, api=None):
+    """
+    Print the text of a tweet
+    and ask the user to input the sentiment they
+    believe the tweet's text has
+    Possible values are encoded by SENTIMENT_DICT
+    :param tweet: the tweet object
+    :param api: Optional. A twitter.Api instance for
+        web based retrieval of the tweet text
+    :return:
+    """
+    assert isinstance(tweet, Status)
+    if api is not None:
+        assert isinstance(api, Api)
+    if hasattr(tweet, "full_text"):
+        output = tweet.full_text
+    elif hasattr(tweet, "text"):
+        output = tweet.text
+    else:
+        output = get_text_from_api(tweet, api)
+    print(output)
+    print("What is the Sentiment? ")
+    param = input()
+    return str(param)
 
 
 def backup_session(destination_dir, file_name):
