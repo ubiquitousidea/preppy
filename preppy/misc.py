@@ -20,6 +20,11 @@ class CodeBook:
     def __init__(self):
         pass
 
+    RELEVANCE = {
+        "0": "Does not pertain to Pre Exposure Prophylaxis",
+        "1": "Pertains to Pre Exposure Prophylaxis"
+    }
+
     SENTIMENT = {
         "1": "Negative sentiment",
         "2": "Neutral sentiment",
@@ -95,12 +100,13 @@ def get_text_from_api(tweet, api):
     return tweet.full_text
 
 
-def get_sentiment(tweet, api=None):
+def ask_param(param_name, tweet, api=None):
     """
     Print the text of a tweet
     and ask the user to input the sentiment they
     believe the tweet's text has
-    Possible values are encoded by SENTIMENT_DICT
+    :param param_name: The name of the parameter to ask about
+        (Only affects the question posed to the user)
     :param tweet: the tweet object
     :param api: Optional. A twitter.Api instance for
         web based retrieval of the tweet text
@@ -116,9 +122,25 @@ def get_sentiment(tweet, api=None):
     else:
         output = get_text_from_api(tweet, api)
     print(output)
-    print("What is the Sentiment? ")
+    print("What is the {:}? ".format(param_name))
     param = input()
     return str(param)
+
+
+def get_sentiment(tweet, api=None):
+    """
+    Print the text of a tweet
+    and ask the user to input the sentiment they
+    believe the tweet's text has
+    Possible values are encoded by CodeBook attribute dictionaries
+    :param tweet: the tweet object
+    :param api: Optional. A twitter.Api instance for
+        web based retrieval of the tweet text
+    :return:
+    """
+    return ask_param(param_name="SENTIMENT",
+                     tweet=tweet,
+                     api=api)
 
 
 def backup_session(destination_dir, file_name):
