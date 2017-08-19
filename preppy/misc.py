@@ -1,12 +1,13 @@
-from twitter.api import Api
-from twitter import Status
-import json
-import time
-import shutil
-import os
 import datetime
+import json
+import logging
+import os
+import shutil
+import time
 from contextlib import contextmanager
 
+from twitter import Status
+from twitter.api import Api
 
 MISSING = None
 
@@ -68,6 +69,20 @@ def cd(new_directory=None):
         os.chdir(previous_directory)
 
 
+def enforce_extension(file_name, ext):
+    """
+    Enforce that a file name has a certain extension
+    :param file_name: the prior file name
+    :param ext: the desired extension for that file.
+    :return: a new file name
+    """
+    ext = ext.strip()
+    if ext[0] != '.':
+        ext = "." + ext
+    basename, _ = os.path.splitext(file_name)
+    return basename + ext
+
+
 def date_modified(file_path):
     try:
         return time.ctime(os.path.getmtime(file_path))
@@ -97,6 +112,7 @@ def get_text_from_api(tweet, api):
     assert isinstance(tweet, Status)
     assert isinstance(api, Api)
     tweet = api.GetStatus(tweet.id)
+    logging.debug("Returning tweet \'full_text\' attribute")
     return tweet.full_text
 
 
@@ -116,10 +132,13 @@ def ask_param(param_name, tweet, api=None):
     if api is not None:
         assert isinstance(api, Api)
     if hasattr(tweet, "full_text"):
+        logging.debug("Returning tweet \'full_text\' attribute")
         output = tweet.full_text
     elif hasattr(tweet, "text"):
+        logging.debug("Returning tweet \'text\' attribute")
         output = tweet.text
     else:
+        logging.debug("Retrieving tweet from internet using Twitter API")
         output = get_text_from_api(tweet, api)
     print(output)
     print("What is the {:}? ".format(param_name))
@@ -165,6 +184,7 @@ def backup_session(destination_dir, file_name):
         basename + uid + extension
     )
     shutil.copy(file_name, destination)
+    logging.debug("Copied {:} to backups folder".format(file_name))
 
 
 def date_string(fmt=None):

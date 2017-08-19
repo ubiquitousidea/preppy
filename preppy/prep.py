@@ -9,6 +9,7 @@ the language because of the Tornado and Scikit-Learn packages.
 """
 
 import os
+import logging
 from twitter import Status
 from numpy.random import choice
 from numpy import array, zeros
