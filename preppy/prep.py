@@ -11,14 +11,15 @@ the language because of the Tornado and Scikit-Learn packages.
 import os
 import logging
 from twitter import Status
-from numpy.random import choice
+from numpy.random import choice, shuffle
 from numpy import array, zeros
 from pandas import DataFrame
 from .misc import (
     get_api, read_json, write_json,
     backup_session, make_list,
     SESSION_FILE_NAME, cull_old_files,
-    get_sentiment, CodeBook, MISSING
+    get_sentiment, ask_param, CodeBook,
+    MISSING
 )
 
 
@@ -146,50 +147,67 @@ class Preppy(object):
         len2 = len(self.tweets)
         return len2 - len1
 
-    def encode_sentiment(self, user_id, only_geo=True, max_tweets=100):
+    def encode_variable(self,
+                        variable_name,
+                        user_id,
+                        only_geo=True,
+                        max_tweets=100,
+                        randomize=True):
         """
         User interaction.
-        Iterate through the tweets and ask user to rate
-            positive, negative, or neutral
-        Record the tweet sentiment as an item of metadata
+        Ask user to encode a variable
+        Record the value as an item of metadata
             in self._metadata
+        :param variable_name: the name of the variable to encode
+            (must be in CodeBook)
         :param {int, str} user_id: The identifier assigned
             to a user when performing this variable encoding
         :param BoolType only_geo: if True, only iterate
             through the tweets which are geotagged
         :param int max_tweets: How may tweets to encode before retiring
+        :param randomize: If true, randomly select tweet order
         :return: NoneType. Modifies self._metadata in place.
         """
-        variable_name = "SENTIMENT"
         assert CODE_BOOK.has_variable(variable_name)
         possible_values = CODE_BOOK.possible_values(variable_name)
         # Concatentate the variable name with the user id
-        variable_name_uid = "SENTIMENT_{:}".format(user_id)
+        variable_name_uid = variable_name + "_{:}".format(user_id)
 
         if only_geo:
-            tweets = list(self.tweets.geotagged().values())
+            tweets = self.tweets.geotagged(as_list=True)
         else:
             tweets = self.tweets.as_list()
+
+        if randomize:
+            shuffle(tweets)
+
         tweet_count = 0
+
         for tweet in tweets:
             sentiment = MISSING
             max_iter = 10
             i = 0
             while i < max_iter:
                 i += 1
-                sentiment = get_sentiment(tweet, api=self.api)
+                sentiment = ask_param(
+                    param_name=variable_name,
+                    tweet=tweet,
+                    api=self.api
+                )
                 if sentiment in possible_values:
                     break
                 else:
-                    print("Possible values: {:}".format(
-                        CODE_BOOK.__getattribute__(variable_name)
-                    ))
+                    msg = "Possible values: {:}"
+                    value = CODE_BOOK.__getattribute__(variable_name)
+                    print(msg.format(value))
+
             self.tweets.record_metadata(
                 id_str=tweet.id_str,
                 param=variable_name_uid,
-                value=sentiment)
+                value=sentiment
+            )
 
-            tweet_count+= 1
+            tweet_count += 1
 
             if tweet_count > max_tweets:
                 break
@@ -319,7 +337,15 @@ class TweetList(object):
     def n_geotagged(self):
         return len(self.geotagged())
 
-    def geotagged(self, tweet_format="Status"):
+    def geotagged(self, tweet_format="Status", as_list=False):
+        """
+        Return a collection of the tweets that have geotags
+        :param str tweet_format: format specifier for the tweets
+        :param BoolType as_list:
+            If True, return a list of tweets.
+            Else return a dict of tweets.
+        :return: list or dict (depends on as_list argument)
+        """
         valid_formats = ("Status", "dict")
         assert tweet_format in valid_formats
         if tweet_format == "Status":
@@ -332,6 +358,9 @@ class TweetList(object):
                       for id_str, tweet
                       in self.tweets.items()
                       if "place" in tweet.AsDict()}
+        if as_list is True:
+            keys = list(geo_tweets.keys())
+            geo_tweets = [geo_tweets[key] for key in sorted(keys)]
         return geo_tweets
 
     def export_geotagged_tweets(self, path=None):

@@ -1,16 +1,16 @@
-import datetime
-import json
-import logging
 import os
-import shutil
 import time
-from contextlib import contextmanager
-
+import json
+import shutil
+import logging
+import datetime
 from twitter import Status
 from twitter.api import Api
+from contextlib import contextmanager
 
 MISSING = None
-
+SESSION_FILE_NAME = "preppy_session.json"
+now = datetime.datetime.now
 DT_FORMATS = {
     "TWITTER": "%Y-%m-%d",
     "BACKUPS": "%Y_%m_%d_%H_%M_%S_%f"
@@ -39,10 +39,6 @@ class CodeBook:
         output = list(self.__getattribute__(var_name).keys())
         output.sort()
         return output
-
-
-SESSION_FILE_NAME = "preppy_session.json"
-now = datetime.datetime.now
 
 
 @contextmanager
@@ -137,7 +133,7 @@ def ask_param(param_name, tweet, api=None):
         logging.debug("Retrieving tweet from internet using Twitter API")
         output = get_text_from_api(tweet, api)
     print(output)
-    print("What is the {:}? ".format(param_name))
+    print("What is the {:}? ".format(param_name.title()))
     param = input()
     return str(param)
 

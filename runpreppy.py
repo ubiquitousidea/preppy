@@ -15,9 +15,9 @@ def _parse_args():
     parser.add_argument("-wd", "--wd",
                         help="Working directory path",
                         default="/Users/danielsnyder/devl/preppy/")
-    parser.add_argument("-task", "--task",
-                        help="Which task to execute; in (\'sentiment\', \'getnew\')",
-                        default="getnew")
+    parser.add_argument("-encode", "--encode",
+                        help="The name of the variable to encode",
+                        default=None)
     parser.add_argument("-debug", "--debug",
                         action="store_true",
                         help="If true, send debug messages to log file",
@@ -28,7 +28,7 @@ def _parse_args():
 args = _parse_args()
 terms = args.terms
 wd = args.wd
-task = args.task
+var_name = args.encode
 debug = args.debug
 
 
@@ -43,7 +43,7 @@ with cd(wd):
     )
     logging.info("Opened {:} session file"
                  .format(session_file))
-    if task == "getnew":
+    if var_name is None:
         logging.info("Retrieving new tweets")
         Session.get_more_tweets(terms)
         reportwriter = ReportWriter(Session)
@@ -53,6 +53,6 @@ with cd(wd):
         unique_states = reportwriter.unique_states()
         logging.info("There are {:} unique states".format(unique_states.__len__()))
         Session.cleanup_session()
-    elif task == "sentiment":
-        Session.encode_sentiment("test", max_tweets=10)
+    else:
+        Session.encode_variable(var_name.upper(), "test", max_tweets=20)
         Session.cleanup_session()
