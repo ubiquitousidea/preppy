@@ -18,19 +18,15 @@ DT_FORMATS = {
 
 
 class CodeBook:
-    def __init__(self):
-        pass
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            logging.debug("Loading {:} into CodeBook".format(key))
+            self.__setattr__(key, value)
 
-    RELEVANCE = {
-        "0": "Does not pertain to Pre Exposure Prophylaxis",
-        "1": "Pertains to Pre Exposure Prophylaxis"
-    }
-
-    SENTIMENT = {
-        "1": "Negative sentiment",
-        "2": "Neutral sentiment",
-        "3": "Positive sentiment"
-    }
+    @classmethod
+    def from_json(cls, file_name):
+        d = read_json(file_name)
+        return cls(**d)
 
     def has_variable(self, var_name):
         try:

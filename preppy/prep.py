@@ -22,7 +22,7 @@ from .misc import (
 )
 
 
-CODE_BOOK = CodeBook()
+CODE_BOOK = CodeBook.from_json("codebook.json")
 
 
 class Preppy(object):
