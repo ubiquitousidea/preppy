@@ -9,7 +9,7 @@ the language because of the Tornado and Scikit-Learn packages.
 """
 
 from numpy.random import shuffle
-
+from getpass import getuser
 from preppy.tweet_list import TweetList
 from preppy.misc import (
     get_api, write_json,
@@ -18,7 +18,8 @@ from preppy.misc import (
     ask_param, CodeBook, MISSING
 )
 
-CODE_BOOK = CodeBook.from_json("codebook.json")
+
+CODE_BOOK = CodeBook.from_json()
 
 
 class Preppy(object):
@@ -144,7 +145,7 @@ class Preppy(object):
 
     def encode_variable(self,
                         variable_name,
-                        user_id,
+                        user_id=None,
                         only_geo=True,
                         max_tweets=100,
                         randomize=True):
@@ -165,16 +166,17 @@ class Preppy(object):
         """
         variable_name = variable_name.upper()
         assert CODE_BOOK.has_variable(variable_name)
+        user_id = getuser() if user_id is None else user_id
         possible_values = CODE_BOOK.possible_values(variable_name)
-        if only_geo:
-            tweets = self.tweets.geotagged(as_list=True)
-        else:
-            tweets = self.tweets.as_list()
-        if randomize:
-            shuffle(tweets)
-        # tweets is a list of twitter.Status objects
+        tweets = self.tweets.as_list(only_geo, randomize)
         tweet_count = 0
         for tweet in tweets:
+            if self.tweets.user_has_encoded(
+                    user_id, variable_name, tweet.id_str):
+                # If this user has already encoded that
+                # variable, do not show the tweet again
+                continue
+
             # Probability of relevance:
             # The following estimate of probability is
             # the average of the binary indicators of
@@ -184,16 +186,14 @@ class Preppy(object):
                 id_str=tweet.id_str,
                 param="RELEVANCE",
             )
-            if variable_name == "RELEVANCE":
-                if p_relevance is not None:
-                    # If encoding relevance and relevance
-                    # has already been rated, skip this tweet.
-                    continue
-            else:
-                if p_relevance is not None and p_relevance < 0.5:
-                    # If encoding another variable other than
-                    # relevance, only show the tweet it is relevant
-                    continue
+
+            if variable_name != "RELEVANCE" \
+                    and p_relevance is not None \
+                    and p_relevance < 0.5:
+                # If encoding another variable other than
+                # relevance, only show the tweet it is relevant
+                continue
+
             param_val = MISSING
             max_iter = 10
             i = 0

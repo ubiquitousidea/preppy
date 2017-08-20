@@ -1,7 +1,7 @@
 import logging
 
 from twitter import Status
-
+from numpy.random import shuffle
 from preppy.misc import (
     read_json,
     write_json,
@@ -51,8 +51,6 @@ class TweetList(object):
 
     def __len__(self):
         return self.n
-
-    # def __iter__(self):
 
     @classmethod
     def from_session_file(cls, path=None):
@@ -109,9 +107,26 @@ class TweetList(object):
                   "metadata": self._metadata}
         return output
 
-    def as_list(self):
+    def as_list(self, only_geo=False, randomize=False):
+        """
+        Return the tweets as a list
+        :param BoolType only_geo: If true, only
+            return tweets which have a place
+            attribute
+        :param BoolType randomize:
+            If true, shuffle the tweets randomly
+        :return: list of twitter.Status objects
+        """
         output = list(self.tweets.values())
-        output.sort(key=lambda tweet: tweet.id)
+        output.sort(key=lambda _tweet: _tweet.id)
+        if only_geo:
+            _output = []
+            for tweet in output:
+                if hasattr(tweet, "place"):
+                    _output.append(tweet)
+            output = _output
+        if randomize:
+            shuffle(output)
         return output
 
     @property
@@ -209,6 +224,21 @@ class TweetList(object):
             self.add_tweets(tweets.tweets)
         return id_list
 
+    def user_has_encoded(self, user_id, variable_name, id_str):
+        """
+        State whether or not a given user has already
+        encoded a given variable for a given tweet id
+        :param user_id: the user ID string
+        :param variable_name: the name of the variable
+        :param id_str: the id of the tweet in question
+        :return: BoolType
+        """
+        try:
+            _ = self._metadata[id_str][variable_name][user_id]
+            return True
+        except KeyError:
+            return False
+
     def get_metadata(self, id_str, param, user_id=None):
         """
         Get the metadata parameter value for a tweet
@@ -244,7 +274,6 @@ class TweetList(object):
             except KeyError:
                 return output
         return output
-
 
     def record_metadata(self, id_str, param, user_id, value):
         """

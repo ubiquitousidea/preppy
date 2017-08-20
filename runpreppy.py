@@ -4,6 +4,7 @@ from preppy import (
 )
 from preppy.report_writer import ReportWriter
 from preppy.logging_setup import start_logging
+from getpass import getuser
 import argparse
 import logging
 
@@ -19,6 +20,11 @@ def _parse_args():
     parser.add_argument("-encode", "--encode",
                         help="The name of the variable to encode",
                         default=None)
+    parser.add_argument("-ntweets", "--ntweets",
+                        help="How many tweets to encode. "
+                             "If encode is not specified, "
+                             "this arg is ignored",
+                        default=20)
     parser.add_argument("-debug", "--debug",
                         action="store_true",
                         help="If true, send debug messages to log file",
@@ -55,5 +61,8 @@ with cd(wd):
         logging.info("There are {:} unique states".format(unique_states.__len__()))
         Session.cleanup_session()
     else:
-        Session.encode_variable(var_name, "test", max_tweets=20)
+        Session.encode_variable(
+            variable_name=var_name,
+            max_tweets=args.ntweets
+        )
         Session.cleanup_session()
