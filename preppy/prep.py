@@ -18,8 +18,7 @@ from .misc import (
     get_api, read_json, write_json,
     backup_session, make_list,
     SESSION_FILE_NAME, cull_old_files,
-    get_sentiment, ask_param, CodeBook,
-    MISSING
+    ask_param, CodeBook, MISSING
 )
 
 
@@ -168,47 +167,54 @@ class Preppy(object):
         :param randomize: If true, randomly select tweet order
         :return: NoneType. Modifies self._metadata in place.
         """
+        variable_name = variable_name.upper()
         assert CODE_BOOK.has_variable(variable_name)
         possible_values = CODE_BOOK.possible_values(variable_name)
         # Concatentate the variable name with the user id
         variable_name_uid = variable_name + "_{:}".format(user_id)
-
         if only_geo:
             tweets = self.tweets.geotagged(as_list=True)
         else:
             tweets = self.tweets.as_list()
-
         if randomize:
             shuffle(tweets)
-
+        # tweets is a list of twitter.Status objects
         tweet_count = 0
-
         for tweet in tweets:
-            sentiment = MISSING
+            # Probability of relevance
+            p_relevance = self.tweets.get_metadata(
+                id_str=tweet.id_str,
+                param="RELEVANCE",
+            )
+            if variable_name == "RELEVANCE":
+                if p_relevance is not None:
+                    continue
+            else:
+                if p_relevance is not None and p_relevance < 0.5:
+                    continue
+            param_val = MISSING
             max_iter = 10
             i = 0
             while i < max_iter:
                 i += 1
-                sentiment = ask_param(
+                param_val = ask_param(
                     param_name=variable_name,
                     tweet=tweet,
                     api=self.api
                 )
-                if sentiment in possible_values:
+                if param_val in possible_values:
                     break
                 else:
                     msg = "Possible values: {:}"
                     value = CODE_BOOK.__getattribute__(variable_name)
                     print(msg.format(value))
-
             self.tweets.record_metadata(
                 id_str=tweet.id_str,
-                param=variable_name_uid,
-                value=sentiment
+                param=variable_name,
+                user_id=user_id,
+                value=param_val
             )
-
             tweet_count += 1
-
             if tweet_count > max_tweets:
                 break
 
@@ -424,20 +430,65 @@ class TweetList(object):
             self.add_tweets(tweets.tweets)
         return id_list
 
-    def record_metadata(self, id_str, param, value):
+    def get_metadata(self, id_str, param, user_id=None):
+        """
+        Get the metadata parameter value for a tweet
+        :param id_str: the ID of the tweet
+        :param param: the parameter name to be returned
+        :param user_id: the user id associated with the
+            value to be returned. If None, return the
+            entire dict of all users who encoded that
+            variable.
+        :return: {str, dict, None}
+        """
+        output = None
+        try:
+            tweet_metadata = self._metadata[id_str]
+        except KeyError:
+            return output
+        try:
+            user_dict = tweet_metadata[param]
+        except KeyError:
+            return output
+        if user_id is None:
+            output = [
+                float(val)
+                for val
+                in user_dict.values()
+            ]
+            # If user is not specified, return
+            # an average value for the relevance
+            return sum(output) / len(output)
+        else:
+            try:
+                output = user_dict[user_id]
+            except KeyError:
+                return output
+        return output
+
+
+    def record_metadata(self, id_str, param, user_id, value):
         """
         Record a piece of metadata associated with a tweet
-            Example of metadata parameter could be:
-                is_related_to_prep
-                is_related_to_truvada
+        Metadata dictionary is of the form:
+        {
+            $tweet_id_string$: {
+                $param_name$: {
+                    $user_id$: $param_value$
+                }
+            }
+        }
         :param id_str: the id of the tweet
-        :param param: the name of the parameter to record
-        :param value: the value of the parameter to record
+        :param param: the name of the variable to record
+        :param user_id: the id of the user who encoded this variable
+        :param value: the value of the variable to record
         """
         assert id_str in self.tweets
         if id_str not in self._metadata:
             self._metadata[id_str] = {}
-        self._metadata[id_str].update({param: value})
+        if param not in self._metadata[id_str]:
+            self._metadata[id_str][param] = {}
+        self._metadata[id_str][param].update({user_id: value})
 
 
 class ReportWriter(object):

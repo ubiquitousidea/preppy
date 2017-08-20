@@ -2,7 +2,7 @@
 from preppy import (
     Preppy, ReportWriter, cd
 )
-from preppy.logging_setup import start_logging_to_file
+from preppy.logging_setup import start_logging
 import argparse
 import logging
 
@@ -33,7 +33,7 @@ debug = args.debug
 
 
 with cd(wd):
-    start_logging_to_file("preppy.log", debug=debug)
+    start_logging(file_name="preppy.log", debug=True)
     logging.info("Starting Preppy Session -----------------------------------")
     session_file = "preppy_session.json"
     Session = Preppy(
@@ -54,5 +54,5 @@ with cd(wd):
         logging.info("There are {:} unique states".format(unique_states.__len__()))
         Session.cleanup_session()
     else:
-        Session.encode_variable(var_name.upper(), "test", max_tweets=20)
+        Session.encode_variable(var_name, "test", max_tweets=20)
         Session.cleanup_session()

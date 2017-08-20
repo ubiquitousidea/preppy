@@ -123,10 +123,10 @@ def ask_param(param_name, tweet, api=None):
     assert isinstance(tweet, Status)
     if api is not None:
         assert isinstance(api, Api)
-    if hasattr(tweet, "full_text"):
+    if hasattr(tweet, "full_text") and tweet.full_text is not None:
         logging.debug("Returning tweet \'full_text\' attribute")
         output = tweet.full_text
-    elif hasattr(tweet, "text"):
+    elif hasattr(tweet, "text") and tweet.text is not None:
         logging.debug("Returning tweet \'text\' attribute")
         output = tweet.text
     else:
@@ -136,22 +136,6 @@ def ask_param(param_name, tweet, api=None):
     print("What is the {:}? ".format(param_name.title()))
     param = input()
     return str(param)
-
-
-def get_sentiment(tweet, api=None):
-    """
-    Print the text of a tweet
-    and ask the user to input the sentiment they
-    believe the tweet's text has
-    Possible values are encoded by CodeBook attribute dictionaries
-    :param tweet: the tweet object
-    :param api: Optional. A twitter.Api instance for
-        web based retrieval of the tweet text
-    :return:
-    """
-    return ask_param(param_name="SENTIMENT",
-                     tweet=tweet,
-                     api=api)
 
 
 def backup_session(destination_dir, file_name):
