@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 from preppy import (
-    Preppy, ReportWriter, cd
+    Preppy, cd
 )
+from preppy.report_writer import ReportWriter
 from preppy.logging_setup import start_logging
 import argparse
 import logging

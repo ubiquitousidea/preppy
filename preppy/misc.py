@@ -24,7 +24,9 @@ class CodeBook:
             self.__setattr__(key, value)
 
     @classmethod
-    def from_json(cls, file_name):
+    def from_json(cls, file_name=None):
+        if file_name is None:
+            file_name = "codebook.json"
         d = read_json(file_name)
         return cls(**d)
 
