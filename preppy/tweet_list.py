@@ -303,3 +303,33 @@ class TweetList(object):
             logging.warning("Attempt was made to insert "
                             "\'{:}\' into param: \'{:}\'"
                             .format(value, param))
+
+    def tweets_coded(self, variable_name):
+        """
+        Tell how many tweets have been coded for a given variable
+        :param variable_name: The name of the variable in question
+        :return: integer; how many tweets have had this variable coded
+        """
+        variable_name = variable_name.upper()
+        if variable_name not in CODE_BOOK.__dict__:
+            raise ValueError("{:} is not in the Code Book"
+                             .format(variable_name))
+        n = 0
+        for id_str, var_dict in self._metadata.items():
+            if variable_name in var_dict:
+                n += 1
+        return n
+
+    def tweets_coding_status(self):
+        """
+        Print a status message describing how many
+        tweets have been coded for each variable
+        in the code book.
+        :return: NoneType
+        """
+        n_tweets = self.n
+        for var_name in CODE_BOOK.variable_names:
+            n_coded = self.tweets_coded(var_name)
+            print("{:} out of {:} tweets have been coded for {:}"
+                  .format(n_coded, n_tweets, var_name.title()))
+

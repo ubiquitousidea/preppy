@@ -4,7 +4,6 @@ from preppy import (
 )
 from preppy.report_writer import ReportWriter
 from preppy.logging_setup import start_logging
-from getpass import getuser
 import argparse
 import logging
 
@@ -24,7 +23,7 @@ def _parse_args():
                         help="How many tweets to encode. "
                              "If encode is not specified, "
                              "this arg is ignored",
-                        default=20)
+                        default=100)
     parser.add_argument("-debug", "--debug",
                         action="store_true",
                         help="If true, send debug messages to log file",
@@ -37,6 +36,7 @@ terms = args.terms
 wd = args.wd
 var_name = args.encode
 debug = args.debug
+ntweets = int(args.ntweets)
 
 
 with cd(wd):
@@ -63,6 +63,7 @@ with cd(wd):
     else:
         Session.encode_variable(
             variable_name=var_name,
-            max_tweets=args.ntweets
+            max_tweets=ntweets
         )
+        Session.tweets.tweets_coding_status()
         Session.cleanup_session()

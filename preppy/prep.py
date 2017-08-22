@@ -217,7 +217,7 @@ class Preppy(object):
                 value=param_val
             )
             tweet_count += 1
-            if tweet_count > max_tweets:
+            if tweet_count >= max_tweets:
                 break
 
 

@@ -30,6 +30,12 @@ class CodeBook:
         d = read_json(file_name)
         return cls(**d)
 
+    @property
+    def variable_names(self):
+        output = list(self.__dict__.keys())
+        output.sort()
+        return output
+
     def has_variable(self, var_name):
         try:
             _ = self.__getattribute__(var_name)
