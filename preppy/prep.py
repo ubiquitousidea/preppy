@@ -208,7 +208,7 @@ class Preppy(object):
                     break
                 else:
                     msg = "Possible values: {:}"
-                    value = CODE_BOOK.__getattribute__(variable_name)
+                    value = CODE_BOOK.explain_possible_values(variable_name)
                     print(msg.format(value))
             self.tweets.record_metadata(
                 id_str=tweet.id_str,

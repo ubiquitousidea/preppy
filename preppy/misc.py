@@ -23,6 +23,22 @@ class CodeBook:
             logging.debug("Loading {:} into CodeBook".format(key))
             self.__setattr__(key, value)
 
+    def explain_possible_values(self, variable_name):
+        """
+        Return the dictionary explaining the possible values
+        and their meanings for a given variable in the Code Book
+        :param variable_name: which variable
+        :return: dict
+        """
+        try:
+            return self.__getattribute__(variable_name)
+        except AttributeError:
+            available = ",".join(self.variable_names)
+            msg = \
+                "{:} not found in Code Book. Possible values are {:}" \
+                .format(variable_name, available)
+            raise AttributeError(msg)
+
     @classmethod
     def from_json(cls, file_name=None):
         if file_name is None:
