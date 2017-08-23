@@ -31,8 +31,8 @@ class TweetList(object):
         if tweets is None:
             self.tweets = {}
         else:
-            self.tweets = {id_str: Status.NewFromJsonDict(tweet)
-                           for id_str, tweet
+            self.tweets = {id_str: Status(**tweet_dict)
+                           for id_str, tweet_dict
                            in tweets.items()}
         if metadata is None:
             self._metadata = {}
@@ -77,6 +77,8 @@ class TweetList(object):
                 return cls(_d)
             else:
                 raise IOError("Unable to parse session file")
+        else:
+            return cls()
 
     @property
     def id_list(self):
