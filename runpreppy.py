@@ -80,7 +80,7 @@ with cd(wd):
         Session.cleanup_session()
     elif updatetweets:
         print("Updating old tweets")
-        Session.status_posterior()
+        Session.status_prior()
         Session.rehydrate_tweets()
         Session.status_posterior()
         Session.cleanup_session()

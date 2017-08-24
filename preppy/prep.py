@@ -51,8 +51,17 @@ class Preppy(object):
         output = self.tweets.as_dict
         return output
 
-    def status_prior(self, _term):
-        print("There are {:d} tweets. Retrieving more tweets related to {:}".format(self.tweets.n, _term))
+    def status_prior(self, _term=None):
+        """
+        State how many tweets there are
+        Optionally include a message about which term is going to be searched
+        :param _term: Optional. Term being searched
+        :return: NoneType
+        """
+        msg = "There are {:d} tweets.".format(self.tweets.n)
+        if _term is not None:
+            msg += "Retrieving more tweets related to {:}".format(_term)
+        print(msg)
 
     def status_posterior(self):
         print("There are {:d} tweets now".format(self.tweets.n))
@@ -153,7 +162,7 @@ class Preppy(object):
 
     def rehydrate_tweets(self):
         """
-        Rehydrate tweets
+        Rehydrate tweets from web
         """
         id_list = self.tweets.id_list
         tweets_dict = rehydrate_tweets(id_list, self.api)

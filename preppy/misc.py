@@ -290,6 +290,7 @@ def make_list(v):
 
 def grouper(n, iterable):
     """
+    An iterable that breaks up another iterable into groups of size <= n.
     From stackoverflow
     https://stackoverflow.com/questions/8991506/iterate-an-iterator-by-chunks-of-n-in-python
     :param n: Chunk Size
@@ -319,6 +320,10 @@ def rehydrate_tweets(id_list, api):
     output = {}
     for _ids in grouper(100, id_list):
         data = {"id": ",".join(_ids)}
+        assert isinstance(api, Api)
+        rate_lim = api.CheckRateLimit(get_status_url)
+        if rate_lim.remaining == 0:
+            time.sleep(60*15)
         response = api._RequestUrl(
             get_status_url,
             verb="GET",

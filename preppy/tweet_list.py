@@ -232,9 +232,8 @@ class TweetList(object):
         :param param: the parameter name to be returned
         :param user_id: the user id associated with the
             value to be returned. If None, return the
-            entire dict of all users who encoded that
-            variable.
-        :return: {str, dict, None}
+            average value for all users.
+        :return: {str, dict, None} None is default
         """
         output = None
         try:
