@@ -12,7 +12,7 @@ def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-terms", "--terms", "-term", "--term",
                         nargs="+", help="Terms to search for",
-                        default=['Truvada', '#PrEP'])
+                        default=None)
     parser.add_argument("-wd", "--wd",
                         help="Working directory path",
                         default="/Users/danielsnyder/devl/preppy/")
@@ -20,10 +20,11 @@ def _parse_args():
                         help="The name of the variable to encode",
                         default=None)
     parser.add_argument("-ntweets", "--ntweets",
-                        help="How many tweets to encode. "
-                             "If encode is not specified, "
-                             "this arg is ignored",
-                        default=100)
+                        help="How many tweets? can be used for -encode or -updatetweets",
+                        default=None)
+    parser.add_argument("-updatetweets",
+                        action="store_true",
+                        default=False)
     parser.add_argument("-debug", "--debug",
                         action="store_true",
                         help="If true, send debug messages to log file",
@@ -34,23 +35,27 @@ def _parse_args():
 args = _parse_args()
 terms = args.terms
 wd = args.wd
-var_name = args.encode
+encode = args.encode
 debug = args.debug
-ntweets = int(args.ntweets)
-
+if args.ntweets is not None:
+    ntweets = int(args.ntweets)
+updatetweets = args.updatetweets
 
 with cd(wd):
-    start_logging(file_name="preppy.log", debug=True)
-    logging.info("Starting Preppy Session -----------------------------------")
+    start_logging(file_name="preppy.log", debug=debug)
+    logging.info("Starting Preppy Session")
     session_file = "preppy_session.json"
+
     Session = Preppy(
         session_file_path=session_file,
         config_file='config.json',
         backup_dir='backups'
     )
+
     logging.info("Opened {:} session file"
                  .format(session_file))
-    if var_name is None:
+
+    if terms:
         logging.info("Retrieving new tweets")
         Session.get_more_tweets(terms)
         reportwriter = ReportWriter(Session)
@@ -60,10 +65,18 @@ with cd(wd):
         unique_states = reportwriter.unique_states()
         logging.info("There are {:} unique states".format(unique_states.__len__()))
         Session.cleanup_session()
-    else:
+    elif encode:
+        if ntweets is None:
+            ntweets = 100
         Session.encode_variable(
-            variable_name=var_name,
+            variable_name=encode,
             max_tweets=ntweets
         )
         Session.tweets.tweets_coding_status()
+        Session.cleanup_session()
+    elif updatetweets:
+        print("Updating old tweets")
+        Session.status_posterior()
+        Session.rehydrate_tweets()
+        Session.status_posterior()
         Session.cleanup_session()

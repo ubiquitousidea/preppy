@@ -4,6 +4,7 @@ import json
 import shutil
 import logging
 import datetime
+import itertools
 from twitter import Status
 from twitter.api import Api
 from contextlib import contextmanager
@@ -285,3 +286,48 @@ def make_list(v):
         return v
     else:
         return [v]
+
+
+def grouper(n, iterable):
+    """
+    From stackoverflow
+    https://stackoverflow.com/questions/8991506/iterate-an-iterator-by-chunks-of-n-in-python
+    :param n: Chunk Size
+    :param iterable: The iterable to be broken into chunks of size N
+    """
+    it = iter(iterable)
+    while True:
+        chunk = tuple(itertools.islice(it, n))
+        if not chunk:
+            return
+        yield chunk
+
+
+def rehydrate_tweets(id_list, api):
+    """
+    Given a list of tweet ID strings (not integers),
+        return a dict of tweets of the form
+            {id_str: Status, ...}
+    :param id_list: list of strings
+    :param api: twitter.Api instance
+    :return: dict of Status instances
+        primary key: id_str
+    """
+    assert isinstance(api, Api)
+    get_status_url = "https://api.twitter.com/1.1/statuses/lookup.json"
+    api_calls = 0
+    output = {}
+    for _ids in grouper(100, id_list):
+        data = {"id": ",".join(_ids)}
+        response = api._RequestUrl(
+            get_status_url,
+            verb="GET",
+            data=data)
+        print("Made Twitter API call")
+        api_calls += 1
+        for tweet_dict in response.json():
+            tweet = Status.NewFromJsonDict(tweet_dict)
+            print("Updated {:}".format(tweet.id_str))
+            output.update({tweet.id_str: tweet})
+    print("Made {:} API calls".format(api_calls))
+    return output

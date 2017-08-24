@@ -189,22 +189,6 @@ class TweetList(object):
             min_id = None
         return min_id
 
-    def add_tweet(self, tweet):
-        """
-        Try adding a single tweet to the tweet list
-        This uses the dict.update method which will
-        overwrite any preexisting tweet of the same
-        id (unique identifier string)
-        :param twitter.Status tweet: A tweet
-        :return: How many tweets were added. integer.
-        """
-        id_str = tweet.id_str
-        if id_str not in self.tweets:
-            self.tweets[id_str] = tweet
-            return 1
-        else:
-            return 0
-
     def add_tweets(self, tweets):
         """
         Add a list of tweets to the tweet list
@@ -212,19 +196,19 @@ class TweetList(object):
             If dict, key is id string (id_str attribute)
         :return: List of ID strings that were added
         """
-        id_list = []
-        n_added = 0
-        if type(tweets) is list:
-            for tweet in tweets:
-                id_list.append(tweet.id_str)
-                n_added += self.add_tweet(tweet)
-        elif type(tweets) is dict:
-            for id_str, tweet in tweets.items():
-                id_list.append(id_str)
-                n_added += self.add_tweet(tweet)
-        elif type(tweets) is TweetList:
-            self.add_tweets(tweets.tweets)
-        return id_list
+        if isinstance(tweets, (list, tuple)):
+            tweet_dict = {tweet.id_str: tweet
+                          for tweet in tweets}
+        elif isinstance(tweets, dict):
+            tweet_dict = tweets
+        elif isinstance(tweets, TweetList):
+            tweet_dict = tweets.tweets
+        else:
+            raise TypeError(
+                'Cannot add tweet from {:}'
+                .format(type(tweets))
+            )
+        self.tweets.update(tweet_dict)
 
     def user_has_encoded(self, user_id, variable_name, id_str):
         """

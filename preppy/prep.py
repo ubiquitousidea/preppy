@@ -8,14 +8,17 @@ user interface to ask questions relevant to HIV researchers. Python chosen as
 the language because of the Tornado and Scikit-Learn packages.
 """
 
+import time
+import logging
+
 from numpy.random import shuffle
+
 from getpass import getuser
 from preppy.tweet_list import TweetList
 from preppy.misc import (
-    get_api, write_json,
-    backup_session, make_list,
-    cull_old_files,
-    ask_param, CodeBook, MISSING
+    get_api, write_json, backup_session,
+    make_list, cull_old_files, ask_param,
+    CodeBook, MISSING, rehydrate_tweets
 )
 
 
@@ -138,10 +141,25 @@ class Preppy(object):
         return tweet_list
 
     def add_tweets(self, tweetlist):
+        """
+        Add tweets from a list or dict
+        :param tweetlist: list or dict of twitter.Status instances
+        :return: integer; Change in size of the tweet list
+        """
         len1 = len(self.tweets)
         self.tweets.add_tweets(tweetlist)
         len2 = len(self.tweets)
         return len2 - len1
+
+    def rehydrate_tweets(self):
+        """
+        Rehydrate tweets
+        """
+        id_list = self.tweets.id_list
+        tweets_dict = rehydrate_tweets(id_list, self.api)
+        tweets_added = len(tweets_dict)
+        print("Rehydrated {:} tweets".format(tweets_added))
+        self.add_tweets(tweets_dict)
 
     def encode_variable(self,
                         variable_name,
@@ -232,6 +250,6 @@ class Preppy(object):
     def cleanup_session(self):
         self.write_session_file()
         backup_session(self.backups_dir, self.session_file_path)
-        cull_old_files(self.backups_dir)
+        cull_old_files(self.backups_dir, n_keep=50)
 
 
