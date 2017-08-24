@@ -39,6 +39,8 @@ encode = args.encode
 debug = args.debug
 if args.ntweets is not None:
     ntweets = int(args.ntweets)
+else:
+    ntweets = None
 updatetweets = args.updatetweets
 
 with cd(wd):
@@ -58,6 +60,7 @@ with cd(wd):
     if terms:
         logging.info("Retrieving new tweets")
         Session.get_more_tweets(terms)
+        Session.tweets.export_geotagged_tweets("geotagged_tweets.json")
         reportwriter = ReportWriter(Session)
         reportwriter.write_report_geo("geo_tweet_report.csv")
         print(reportwriter.country_counts())
@@ -70,7 +73,8 @@ with cd(wd):
             ntweets = 100
         Session.encode_variable(
             variable_name=encode,
-            max_tweets=ntweets
+            max_tweets=ntweets,
+            only_geo=False
         )
         Session.tweets.tweets_coding_status()
         Session.cleanup_session()
