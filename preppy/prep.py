@@ -15,6 +15,7 @@ from numpy.random import shuffle
 
 from getpass import getuser
 from preppy.tweet_list import TweetList
+from preppy.tweet_properties import is_relevant
 from preppy.misc import (
     get_api, write_json, backup_session,
     make_list, cull_old_files, ask_param,
@@ -204,15 +205,7 @@ class Preppy(object):
                 # variable, do not show the tweet again
                 continue
 
-            # Probability of relevance:
-            # The following estimate of probability is
-            # the average of the binary indicators of
-            # relevance from all users who coded the
-            # tweet for relevance
-            p_relevance = self.tweets.get_metadata(
-                id_str=tweet.id_str,
-                param="RELEVANCE",
-            )
+            p_relevance = is_relevant(tweet, self.tweets)
 
             if variable_name != "RELEVANCE" \
                     and p_relevance is not None \
@@ -244,7 +237,7 @@ class Preppy(object):
                 value=param_val
             )
             tweet_count += 1
-            if tweet_count >= max_tweets:
+            if max_tweets != 0 and tweet_count >= max_tweets:
                 break
 
 

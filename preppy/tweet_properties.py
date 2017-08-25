@@ -3,30 +3,32 @@
 import os
 from twitter import Status
 from numpy import array, zeros
-from preppy.misc import MISSING, read_json
+from preppy.misc import MISSING, read_json, ReverseLookup
+from preppy.tweet_list import TweetList
 
 missing = MISSING
 dir_name = os.path.dirname(__file__)
 d = read_json("{:}/state_codes.json".format(dir_name))
 valid_state_codes = d["valid_state_codes"]
+regions = ReverseLookup(d["regions"])
 
 
-def get_id(tweet):
+def get_id(tweet, *args):
     return tweet.id
 
 
-def get_date(tweet):
+def get_date(tweet, *args):
     return tweet.created_at
 
 
-def get_user_id(tweet):
+def get_user_id(tweet, *args):
     try:
         return tweet.user.id
     except:
         return missing
 
 
-def get_text(tweet):
+def get_text(tweet, *args):
     try:
         if tweet.full_text:
             return tweet.full_text
@@ -38,14 +40,14 @@ def get_text(tweet):
         return missing
 
 
-def get_place(tweet):
+def get_place(tweet, *args):
     try:
         return tweet.place["full_name"]
     except:
         return missing
 
 
-def get_centroid(tweet):
+def get_centroid(tweet, *args):
     try:
         bounding_box = array(
             tweet.place
@@ -58,7 +60,7 @@ def get_centroid(tweet):
         return zeros(2)
 
 
-def get_longitude(tweet):
+def get_longitude(tweet, *args):
     try:
         centroid = get_centroid(tweet)
         return centroid[0]
@@ -66,7 +68,7 @@ def get_longitude(tweet):
         return missing
 
 
-def get_latitude(tweet):
+def get_latitude(tweet, *args):
     try:
         centroid = get_centroid(tweet)
         return centroid[1]
@@ -74,7 +76,7 @@ def get_latitude(tweet):
         return missing
 
 
-def get_country(tweet):
+def get_country(tweet, *args):
     assert isinstance(tweet, Status)
     try:
         return tweet.place["country"]
@@ -82,7 +84,7 @@ def get_country(tweet):
         return missing
 
 
-def get_state(tweet):
+def get_state(tweet, *args):
     """
     Get the state in which the tweet originated
     Currently relies upon the JSON response from twitter API
@@ -113,16 +115,20 @@ def get_state(tweet):
     return state_code
 
 
-def get_region(tweet):
+def get_region(tweet, *args):
     """
     Get the region of the US a tweet originated from
-    :param tweet:
+    :param tweet: twitter.Status object
     :return:
     """
-    return missing
+    try:
+        state_code = get_state(tweet)
+        return regions.lookup(state_code)
+    except:
+        return missing
 
 
-def get_user_place(tweet):
+def get_user_place(tweet, *args):
     try:
         place = tweet.user.location
         return place
@@ -130,3 +136,11 @@ def get_user_place(tweet):
         return missing
 
 
+def is_relevant(tweet, tweet_list):
+    assert isinstance(tweet_list, TweetList)
+    return tweet_list.get_metadata(tweet.id_str, "RELEVANCE")
+
+
+def has_geotag(tweet, *args):
+    place = get_place(tweet)
+    return place is not None

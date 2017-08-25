@@ -6,7 +6,8 @@ from preppy import (
 from preppy.tweet_properties import (
     get_country, get_date, get_id, get_latitude,
     get_longitude, get_place, get_region,
-    get_state, get_text, get_user_id
+    get_state, get_text, get_user_id,
+    is_relevant
 )
 
 
@@ -38,26 +39,16 @@ class ReportWriter(object):
         contain a 'place' attribute
         :return: dict of twitter.Status objects
         """
-        return self.tweets.geotagged()
+        return self.tweets.as_list(only_geo=True)
 
     @property
     def table_all(self):
-        tweets = list(self.tweets.tweets.values())
-        tweets.sort(key=lambda tweet: tweet.id)
+        tweets = self.tweets.as_list()
         return self.make_table(tweets)
 
     @property
     def table_geo(self):
-        """
-        Return a table of geotagged tweets with columns:
-            0: tweet ID string
-            1: state
-            2: tweet text
-            3: state political affiliation
-        :return: pandas.DataFrame
-        """
-        tweets = list(self.geotagged.values())
-        tweets.sort(key=lambda tweet: tweet.id)
+        tweets = self.tweets.as_list(only_geo=True)
         return self.make_table(tweets)
 
     def country_counts(self, min_count=3):
@@ -88,9 +79,7 @@ class ReportWriter(object):
         :return: pandas.DataFrame
         """
         if tweets is None:
-            tweets = list(self.tweets.tweets.values())
-            tweets.sort(key=lambda tweet: tweet.id)
-
+            tweets = self.tweets.as_list()
 
         column_getters = (
             ("id", get_id),
@@ -102,16 +91,16 @@ class ReportWriter(object):
             ("longitude", get_longitude),
             ("latitude", get_latitude),
             ("state", get_state),
-            ("us_region", get_region)
+            ("us_region", get_region),
+            ("relevance", is_relevant)
         )
         column_order = [column_getter[0]
                         for column_getter
                         in column_getters]
         output_dict = {
             key: [
-                fn(tweet)
-                for tweet
-                in tweets
+                fn(tweet, self.tweets)
+                for tweet in tweets
             ]
             for key, fn
             in column_getters

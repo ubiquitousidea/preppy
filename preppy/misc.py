@@ -66,6 +66,34 @@ class CodeBook:
         return output
 
 
+class ReverseLookup(object):
+    """
+    Given some dictionary of the form {key: list,...},
+    find the key whose (list) value contains a value
+    """
+    def __init__(self, d):
+        self._lookup = {}
+        assert isinstance(d, dict)
+        for key, listvalue in d.items():
+            self._lookup.update(
+                {
+                    item: key
+                    for item
+                    in listvalue
+                }
+            )
+
+    @classmethod
+    def from_json(cls, json_name, primary_key=None):
+        d = read_json(json_name)
+        if primary_key:
+            d = d[primary_key]
+        return cls(d)
+
+    def lookup(self, value):
+        return self._lookup[value]
+
+
 @contextmanager
 def cd(new_directory=None):
     """

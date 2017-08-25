@@ -119,14 +119,24 @@ class TweetList(object):
             If true, shuffle the tweets randomly
         :return: list of twitter.Status objects
         """
-        output = list(self.tweets.values())
-        output.sort(key=lambda _tweet: _tweet.id)
+
+        def has_geotag(tweet):
+            try:
+                _ = tweet.place["full_name"]
+                return True
+            except:
+                return False
+
         if only_geo:
-            _output = []
-            for tweet in output:
-                if hasattr(tweet, "place"):
-                    _output.append(tweet)
-            output = _output
+            output = [tweet
+                      for tweet
+                      in self.tweets.values()
+                      if has_geotag(tweet)]
+        else:
+            output = [tweet
+                      for tweet
+                      in self.tweets.values()]
+        output.sort(key=lambda _tweet: _tweet.id)
         if randomize:
             shuffle(output)
         return output
@@ -236,6 +246,7 @@ class TweetList(object):
         :return: {str, dict, None} None is default
         """
         output = None
+        assert isinstance(id_str, str)
         try:
             tweet_metadata = self._metadata[id_str]
         except KeyError:
