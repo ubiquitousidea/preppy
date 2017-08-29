@@ -3,6 +3,7 @@ from pandas import DataFrame
 from preppy import (
     TweetList, Preppy
 )
+from preppy.misc import write_json, enforce_extension
 from preppy.tweet_properties import (
     get_country, get_date, get_id, get_latitude,
     get_longitude, get_place, get_region,
@@ -84,15 +85,15 @@ class ReportWriter(object):
             ("id", get_id),
             ("date", get_date),
             ("user", get_user_id),
-            ("text", get_text),
             ("place", get_place),
             ("country", get_country),
             ("longitude", get_longitude),
             ("latitude", get_latitude),
             ("state", get_state),
             ("us_region", get_region),
+            ("text", get_text),
+            ("hashtags", get_hashtags),
             ("relevance", is_relevant),
-            ("hashtags", get_hashtags)
         )
         column_order = [column_getter[0]
                         for column_getter
@@ -107,6 +108,68 @@ class ReportWriter(object):
         }
         output = DataFrame.from_dict(output_dict)
         output = output[column_order]
+        return output
+
+    def hashtag_table(self, output_file_name=None, min_freq=None):
+        """
+        Create a dict of all hashtags counting up how many
+        relevant tweets and how many irrelevant tweets used
+        that tag.
+        :param output_file_name: optional output file name
+            (will be json)
+        :param min_freq: Minimum number of hashtag observations
+            to be included in the table
+        :return: dict of the form:
+            {hashtag: {RELEVANT: int, IRRELEVANT: int},...}
+            write JSON file if output_file_name is provided
+        """
+        # Dict keys
+        RELEVANT = "RELEVANT"
+        IRRELEVANT = "IRRELEVANT"
+        UNKNOWN = "UNKNOWN"
+        SPECIFICITY = "SPECIFICITY"
+        hashtag_table = {}
+
+        for tweet in self.tweets.as_list():
+            relevant = is_relevant(tweet, self.tweets)
+            hashtags = get_hashtags(tweet)
+            if not hashtags:
+                continue
+            for tag in hashtags:
+                if tag not in hashtag_table:
+                    hashtag_table[tag] = {
+                        RELEVANT: 0,
+                        IRRELEVANT: 0,
+                        UNKNOWN: 0
+                    }
+                if relevant == 1:
+                    hashtag_table[tag][RELEVANT] += 1
+                elif relevant == 0:
+                    hashtag_table[tag][IRRELEVANT] += 1
+                else:
+                    hashtag_table[tag][UNKNOWN] += 1
+
+        if min_freq is not None:
+            min_freq = max(0, int(min_freq))
+            output = {tag: usage for tag, usage
+                      in hashtag_table.items()
+                      if sum(usage.values()) >= min_freq}
+        else:
+            output = hashtag_table
+
+        for usage in output.values():
+            # difference between usage count in
+            # relevant and irrelevant tweets
+            # divided by total number of usages
+            total = usage[RELEVANT] + usage[IRRELEVANT]
+            diff = usage[RELEVANT] - usage[IRRELEVANT]
+            usage.update({
+                SPECIFICITY: diff / total if total > 0 else 0.0
+            })
+
+        if output_file_name:
+            enforce_extension(output_file_name, ".json")
+            write_json(output, output_file_name)
         return output
 
     def write_report_geo(self, path):

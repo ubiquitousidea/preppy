@@ -76,6 +76,7 @@ with cd(wd):
         Session.tweets.export_geotagged_tweets("geotagged_tweets.json")
         reportwriter = ReportWriter(Session)
         reportwriter.write_report_geo("geo_tweet_report.csv")
+        reportwriter.hashtag_table("hashtag_frequencies.json", min_freq=10)
         print(reportwriter.country_counts())
         print(reportwriter.state_counts())
         unique_states = reportwriter.unique_states()
