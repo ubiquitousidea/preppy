@@ -5,7 +5,6 @@ from preppy import (
 from preppy.report_writer import ReportWriter
 import argparse
 import logging
-import sys
 
 
 def _parse_args():
@@ -63,7 +62,6 @@ with cd(wd):
         Session.status_prior()
         Session.rehydrate_tweets()
         Session.status_posterior()
-        Session.cleanup_session()
     if terms:
         logging.info("Retrieving new tweets")
         Session.get_more_tweets(terms)

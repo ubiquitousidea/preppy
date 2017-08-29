@@ -4,7 +4,7 @@ import os
 from twitter import Status
 from numpy import array, zeros
 from preppy.misc import MISSING, read_json, ReverseLookup
-from preppy.tweet_list import TweetList
+
 
 missing = MISSING
 dir_name = os.path.dirname(__file__)
@@ -23,8 +23,30 @@ def get_date(tweet, *args):
 
 def get_user_id(tweet, *args):
     try:
-        return tweet.user.id
+        return tweet.user['id']
     except:
+        return missing
+
+
+def get_hashtags(tweet, *args):
+    """
+    Return a list of the hashtag texts
+    """
+    try:
+        return [tag["text"] for tag in tweet.hashtags]
+    except:
+        return missing
+
+
+def get_hashtag_stringlist(tweet, *args):
+    """
+    Careful putting this into a csv file since this
+    return is a string that contains commas
+    """
+    tags = get_hashtags(tweet)
+    if tags:
+        return ",".join(tags)
+    else:
         return missing
 
 
@@ -137,7 +159,6 @@ def get_user_place(tweet, *args):
 
 
 def is_relevant(tweet, tweet_list):
-    assert isinstance(tweet_list, TweetList)
     return tweet_list.get_metadata(tweet.id_str, "RELEVANCE")
 
 

@@ -9,6 +9,7 @@ from twitter import Status
 from twitter.api import Api
 from contextlib import contextmanager
 
+
 MISSING = None
 SESSION_FILE_NAME = "preppy_session.json"
 now = datetime.datetime.now
@@ -49,6 +50,10 @@ class CodeBook:
 
     @property
     def variable_names(self):
+        """
+        Return the available variables in the CodeBook instance
+        :return: list of strings
+        """
         output = list(self.__dict__.keys())
         output.sort()
         return output
@@ -185,7 +190,19 @@ def ask_param(param_name, tweet, api=None):
     else:
         logging.debug("Retrieving tweet from internet using Twitter API")
         output = get_text_from_api(tweet, api)
+
     print(output)
+    try:
+        hashtag_list = [tag['text'] for tag in tweet.hashtags]
+    except:
+        hashtag_list = []
+    place = None
+    try:
+        place = tweet.place["full_name"]
+    except:
+        place = "Missing"
+    print("Place: {:}".format(place))
+    print("Hash Tags:", ",".join(hashtag_list))
     print("What is the {:}? ".format(param_name.title()))
     param = input()
     return str(param)

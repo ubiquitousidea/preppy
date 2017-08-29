@@ -9,6 +9,14 @@ from preppy.misc import (
 )
 
 
+def has_geotag(tweet):
+    try:
+        _ = tweet.place["full_name"]
+        return True
+    except:
+        return False
+
+
 CODE_BOOK = CodeBook.from_json()
 
 
@@ -119,14 +127,6 @@ class TweetList(object):
             If true, shuffle the tweets randomly
         :return: list of twitter.Status objects
         """
-
-        def has_geotag(tweet):
-            try:
-                _ = tweet.place["full_name"]
-                return True
-            except:
-                return False
-
         if only_geo:
             output = [tweet
                       for tweet
@@ -149,30 +149,25 @@ class TweetList(object):
     def n_geotagged(self):
         return len(self.geotagged())
 
-    def geotagged(self, tweet_format="Status", as_list=False):
+    def geotagged(self, tweet_format="Status"):
         """
         Return a collection of the tweets that have geotags
         :param str tweet_format: format specifier for the tweets
-        :param BoolType as_list:
-            If True, return a list of tweets.
-            Else return a dict of tweets.
         :return: list or dict (depends on as_list argument)
         """
-        valid_formats = ("Status", "dict")
-        assert tweet_format in valid_formats
         if tweet_format == "Status":
             def fn(_tweet):
                 return _tweet
         elif tweet_format == "dict":
             def fn(_tweet):
                 return _tweet.AsDict()
+        else:
+            msg = 'Tweet format can be \'dict\' or \'Status\''
+            raise ValueError(msg)
         geo_tweets = {id_str: fn(tweet)
                       for id_str, tweet
                       in self.tweets.items()
-                      if "place" in tweet.AsDict()}
-        if as_list is True:
-            keys = list(geo_tweets.keys())
-            geo_tweets = [geo_tweets[key] for key in sorted(keys)]
+                      if has_geotag(tweet)}
         return geo_tweets
 
     def export_geotagged_tweets(self, path=None):
@@ -271,6 +266,20 @@ class TweetList(object):
                 return output
         return output
 
+    def clear_metadata(self, id_str, param=None):
+        """
+        Clear the metadata for a given tweet
+        :param id_str: the tweet ID string
+        :param param: name of the parameter to clear
+            If None, all parameters will be cleared
+        :return: NoneType
+        """
+        assert param in CODE_BOOK.variable_names
+        if param is None:
+            self._metadata[id_str] = {}
+        else:
+            self._metadata[id_str][param] = {}
+
     def record_metadata(self, id_str, param, user_id, value):
         """
         Record a piece of metadata associated with a tweet
@@ -299,6 +308,16 @@ class TweetList(object):
             logging.warning("Attempt was made to insert "
                             "\'{:}\' into param: \'{:}\'"
                             .format(value, param))
+
+    def predict_metadata(self, id_str, var_name):
+        """
+        Predict the value for a given variable
+        Using KNN classification
+        :param id_str: the id string of the tweet
+        :param var_name: the name of the variable to be predicted
+        :return: The predicted value for that variable
+        """
+        pass
 
     def tweets_coded(self, variable_name):
         """

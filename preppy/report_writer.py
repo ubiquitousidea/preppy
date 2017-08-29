@@ -7,7 +7,7 @@ from preppy.tweet_properties import (
     get_country, get_date, get_id, get_latitude,
     get_longitude, get_place, get_region,
     get_state, get_text, get_user_id,
-    is_relevant
+    is_relevant, get_hashtags
 )
 
 
@@ -43,8 +43,7 @@ class ReportWriter(object):
 
     @property
     def table_all(self):
-        tweets = self.tweets.as_list()
-        return self.make_table(tweets)
+        return self.make_table()
 
     @property
     def table_geo(self):
@@ -92,7 +91,8 @@ class ReportWriter(object):
             ("latitude", get_latitude),
             ("state", get_state),
             ("us_region", get_region),
-            ("relevance", is_relevant)
+            ("relevance", is_relevant),
+            ("hashtags", get_hashtags)
         )
         column_order = [column_getter[0]
                         for column_getter
