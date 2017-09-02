@@ -75,6 +75,14 @@ class ReverseLookup(object):
     """
     Given some dictionary of the form {key: list,...},
     find the key whose (list) value contains a value
+
+    We presume that the elements of one list are unique
+    to that particular key.
+
+    First application of this class is to look up which
+    "region" a state is in given a dictionary with
+    primary key: 'region' and value: a list of states
+    in that region.
     """
     def __init__(self, d):
         self._lookup = {}

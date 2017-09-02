@@ -172,6 +172,16 @@ class ReportWriter(object):
             write_json(output, output_file_name)
         return output
 
+    def select_factors(self):
+        """
+        Use the relevance data in conjunction with hashtag presence
+        to decide which hashtags might be best predictors for
+        a model that predicts relevance
+        :return: list of strings
+        """
+        hashtag_dict = self.hashtag_table(min_freq=10)
+        return None
+
     def write_report_geo(self, path):
         report = self.table_geo
         report.to_csv(path)
