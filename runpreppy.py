@@ -32,6 +32,10 @@ def _parse_args():
                         action="store_true",
                         help="If true, send debug messages to log file",
                         default=False)
+    parser.add_argument("-noclean", "--noclean", "-nocleanup", "--nocleanup",
+                        help="If present, preppy session will not be saved and no backups will be made",
+                        action="store_true",
+                        default=False)
     return parser.parse_args()
 
 
@@ -43,7 +47,7 @@ debug = args.debug
 report = args.report
 ntweets = args.ntweets
 updatetweets = args.updatetweets
-
+noclean = args.noclean
 
 with cd(wd):
     logging.info("Starting Preppy Session")
@@ -76,9 +80,12 @@ with cd(wd):
         Session.tweets.export_geotagged_tweets("geotagged_tweets.json")
         reportwriter = ReportWriter(Session)
         reportwriter.write_report_geo("geo_tweet_report.csv")
+        reportwriter.write_report_coded(
+            "tweet_relevance_coding_sheet.xlsx", fmt="excel")
         reportwriter.hashtag_table("hashtag_frequencies.json", min_freq=10)
         print(reportwriter.country_counts())
         print(reportwriter.state_counts())
         unique_states = reportwriter.unique_states()
         logging.info("There are {:} unique states".format(unique_states.__len__()))
-    Session.cleanup_session()
+    if not noclean:
+        Session.cleanup_session()

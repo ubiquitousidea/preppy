@@ -1,4 +1,4 @@
-from numpy.random.mtrand import choice
+from numpy.random.mtrand import choice, shuffle
 from pandas import DataFrame
 from preppy import (
     TweetList, Preppy
@@ -195,14 +195,32 @@ class ReportWriter(object):
         irrelevant_words = {}  # a set
         for tweet in self.tweets.irrelevant:
             irrelevant_words.update(get_words(tweet))
-
-
-
         return None
 
     def write_report_geo(self, path):
         report = self.table_geo
         report.to_csv(path)
+
+    def write_report_coded(self, path, fmt=None):
+        """
+        Write a report of the tweets that have been coded for
+        relevance (both relevant and irrelevant ones)
+        :param path: file path of the csv file to be written
+        :return: NoneType
+        """
+        if fmt is None:
+            fmt = 'csv'
+        tweets = self.tweets.relevant + self.tweets.irrelevant
+        shuffle(tweets)
+        report = self.make_table(tweets)
+        if fmt == "csv":
+            report.to_csv(path)
+        elif fmt == "excel" or fmt == "xls":
+            report.to_excel(path)
+        else:
+            raise IOError("{:} is not a valid "
+                          "output format for this "
+                          "report.".format(fmt))
 
     def get_random_tweet(self):
         id_str = choice(self.tweets.id_list)
