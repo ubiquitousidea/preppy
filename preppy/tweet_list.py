@@ -7,6 +7,7 @@ from preppy.misc import (
     write_json,
     CodeBook
 )
+from preppy.tweet_properties import is_relevant
 
 
 def has_geotag(tweet):
@@ -115,6 +116,30 @@ class TweetList(object):
         }
         output = {"tweets": output_tweets,
                   "metadata": self._metadata}
+        return output
+
+    @property
+    def relevant(self):
+        """
+        Return the tweets that have been coded as relevant
+        as a list
+        :return: list of twitter.Status instances
+        """
+        output = [tweet for tweet in self.tweets.values()
+                  if is_relevant(tweet, self) == 1]
+        output.sort(key=lambda _tweet: _tweet.id)
+        return output
+
+    @property
+    def irrelevant(self):
+        """
+        Return the tweets that have been coded as irrelevant
+        as a list
+        :return: list of twitter.Status intances
+        """
+        output = [tweet for tweet in self.tweets.values()
+                  if is_relevant(tweet, self) == 0]
+        output.sort(key=lambda _tweet: _tweet.id)
         return output
 
     def as_list(self, only_geo=False, randomize=False):

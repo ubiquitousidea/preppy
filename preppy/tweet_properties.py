@@ -162,6 +162,15 @@ def is_relevant(tweet, tweet_list):
     return tweet_list.get_metadata(tweet.id_str, "RELEVANCE")
 
 
+def get_words(tweet, *args):
+    """
+    Return set of words in a tweet text
+    :param tweet: twitter.Status instance
+    :return: set
+    """
+    return {}
+
+
 def has_geotag(tweet, *args):
     place = get_place(tweet)
     return place is not None

@@ -8,7 +8,7 @@ from preppy.tweet_properties import (
     get_country, get_date, get_id, get_latitude,
     get_longitude, get_place, get_region,
     get_state, get_text, get_user_id,
-    is_relevant, get_hashtags
+    is_relevant, get_hashtags, get_words
 )
 
 
@@ -177,9 +177,27 @@ class ReportWriter(object):
         Use the relevance data in conjunction with hashtag presence
         to decide which hashtags might be best predictors for
         a model that predicts relevance
+
+        Pseudo-code:
+
+        . Obtain set of words present in relevant tweets
+        . Obtain set of words present in irrelevant tweets
+        . First, try set diff, both ways, to find words
+            that are most specific indicators of relevance
+            and irrelevance.
+
         :return: list of strings
         """
-        hashtag_dict = self.hashtag_table(min_freq=10)
+        relevant_words = {}  # a set
+        for tweet in self.tweets.relevant:
+            relevant_words.update(get_words(tweet))
+
+        irrelevant_words = {}  # a set
+        for tweet in self.tweets.irrelevant:
+            irrelevant_words.update(get_words(tweet))
+
+
+
         return None
 
     def write_report_geo(self, path):
