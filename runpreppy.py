@@ -14,7 +14,7 @@ def _parse_args():
                         default=[])
     parser.add_argument("-wd", "--wd",
                         help="Working directory path",
-                        default="/Users/danielsnyder/devl/preppy/")
+                        default=".")
     parser.add_argument("-encode", "--encode",
                         help="The name of the variable to encode",
                         default="", type=str)
