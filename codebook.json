@@ -1,0 +1,11 @@
+{
+  "RELEVANCE" : {
+    "0": "Does not pertain to Pre Exposure Prophylaxis",
+    "1": "Pertains to Pre Exposure Prophylaxis"
+    },
+  "SENTIMENT" : {
+    "1": "Negative sentiment",
+    "2": "Neutral sentiment",
+    "3": "Positive sentiment"
+  }
+}
