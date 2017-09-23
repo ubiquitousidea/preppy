@@ -1,6 +1,13 @@
 # preppy
 Application used for academic research into public discussion of HIV and PrEP
 
+## Required packages
+Since I haven't yet deployed preppy as a package, the dependencies will be listed here.
+This application is written for python 3.x.
+The only required package not included in Anaconda is:
+- python-twitter (http://github.com/bear/python-twitter)
+
+
 ## Basic Operating Info
 The main driver script runpreppy.py requires the presence of a config file (config.json) and a code book file (codebook.json). The config file should contain the twitter authentication credentials needed for the API queries. They are a dictionary of the four arguments needed to instantiate a twitter.API object (from python-twitter package):
 {"consumer_key": "...", "consumer_secret": "...", "access_token_key", "...", "access_token_secret": "..."}. These can be obtained from the twitter developer page and going to "My Apps".
