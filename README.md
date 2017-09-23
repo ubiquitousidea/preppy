@@ -22,6 +22,7 @@ It will also produce (for a development feature) a json file of tweet hashtags a
 ## Other Script Arguments Available.
 Other args include:
 - "wd": change the working directory where the "preppy_session.json" session file will be stored.
-- "updatetweets": In the event of code development you destroy the contents of your tweet dictionary, run this command "runpreppy.py -updatetweets" and a custom API call will be used to retrieve the tweet contents for each of the tweet ID's stored in batches of 100 (be aware of the rate limit of 180 calls per 15 minute block).
+- "updatetweets": If in the event of code development you destroy the contents of your tweet dictionary inside preppy_session.json, run this command "runpreppy.py -updatetweets" and a custom API call will be used to retrieve the tweet contents for each of the tweet ID's stored in batches of 100 (be aware of the rate limit of 180 calls per 15 minute block).
+(Consider forking bear/python-twitter, writing this into the twitter.API class, and pull requesting). You should probably ask first. I'm not sure how people feel about random pull requests from strangers.
 - "debug": Some extra printed info. Not really hooked up to much right now.
 - "noclean": suppress the save and backup operations (session writes no session file and performs no backup of the latest session file).
