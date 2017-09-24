@@ -12,8 +12,7 @@ from preppy.tweet_properties import is_relevant
 
 def has_geotag(tweet):
     try:
-        _ = tweet.place["full_name"]
-        return True
+        return tweet.place is not None
     except:
         return False
 

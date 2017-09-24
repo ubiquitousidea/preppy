@@ -79,9 +79,9 @@ with cd(wd):
     if report:
         Session.tweets.export_geotagged_tweets("geotagged_tweets.json")
         reportwriter = ReportWriter(Session)
-        reportwriter.write_report_geo("geo_tweet_report.csv")
-        reportwriter.write_report_coded(
-            "tweet_relevance_coding_sheet.xlsx", fmt="excel")
+        reportwriter.write_report_geo("geo_tweet_report.xlsx", fmt='excel')
+        # reportwriter.write_report_coded(
+        #     "tweet_relevance_coding_sheet.xlsx", fmt="excel")
         reportwriter.hashtag_table("hashtag_frequencies.json", min_freq=10)
         print(reportwriter.country_counts())
         print(reportwriter.state_counts())

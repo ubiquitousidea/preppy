@@ -197,9 +197,25 @@ class ReportWriter(object):
             irrelevant_words.update(get_words(tweet))
         return None
 
-    def write_report_geo(self, path):
+    def write_report_geo(self, path, fmt='csv'):
+        """
+        Write a tabular report containing the tweets and their metadata
+        only including geotagged tweets (geotaggedness determined from
+        the tweet.place attribute being not None). tweet.place will be
+        a dict if the tweet is geotagged.
+        :param path:
+        :param fmt:
+        :return:
+        """
         report = self.table_geo
-        report.to_csv(path)
+        if fmt == 'csv':
+            report.to_csv(path)
+        elif fmt == "excel" or fmt == "xls":
+            report.to_excel(path)
+        else:
+            raise IOError("{:} is not a valid "
+                          "output format for this "
+                          "report.".format(fmt))
 
     def write_report_coded(self, path, fmt=None):
         """
