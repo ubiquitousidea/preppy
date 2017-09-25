@@ -6,7 +6,7 @@ Since I haven't yet deployed preppy as a package, the dependencies will be liste
 This application is written for python 3.x.
 The only required package not included in Anaconda is:
 - python-twitter (http://github.com/bear/python-twitter)
-
+This can be installed through conda: "conda install python-twitter"
 
 ## Basic Operating Info
 The main driver script runpreppy.py requires the presence of a config file (config.json) and a code book file (codebook.json). The config file should contain the twitter authentication credentials needed for the API queries. They are a dictionary of the four arguments needed to instantiate a twitter.API object (from python-twitter package):
