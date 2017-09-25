@@ -7,14 +7,7 @@ from preppy.misc import (
     write_json,
     CodeBook
 )
-from preppy.tweet_properties import is_relevant
-
-
-def has_geotag(tweet):
-    try:
-        return tweet.place is not None
-    except:
-        return False
+from preppy.tweet_properties import is_relevant, has_geotag
 
 
 CODE_BOOK = CodeBook.from_json()

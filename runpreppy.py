@@ -83,6 +83,7 @@ with cd(wd):
         # reportwriter.write_report_coded(
         #     "tweet_relevance_coding_sheet.xlsx", fmt="excel")
         reportwriter.hashtag_table("hashtag_frequencies.json", min_freq=10)
+        print("There are {:} geotagged tweets".format(reportwriter.how_many_geotagged()))
         print(reportwriter.country_counts())
         print(reportwriter.state_counts())
         unique_states = reportwriter.unique_states()

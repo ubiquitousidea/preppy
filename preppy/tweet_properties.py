@@ -158,6 +158,30 @@ def get_user_place(tweet, *args):
         return missing
 
 
+def get_coordinates(tweet, *args):
+    """
+    Return the coordinates attribute of the tweet.
+    Coordinates maybe here or inside the place attribute.
+    :param tweet: twitter.Status instance
+    :param args: extra arguments that will be ignored
+    :return: Coordinates
+    """
+    try:
+        return tweet.coordinates
+    except:
+        return missing
+
+
+def get_geo(tweet, *args):
+    """
+    Return the geo attribute of the tweet
+    """
+    try:
+        return tweet.geo
+    except:
+        return missing
+
+
 def is_relevant(tweet, tweet_list):
     return tweet_list.get_metadata(tweet.id_str, "RELEVANCE")
 
@@ -173,4 +197,10 @@ def get_words(tweet, *args):
 
 def has_geotag(tweet, *args):
     place = get_place(tweet)
-    return place is not None
+    coord = get_coordinates(tweet)
+    geooo = get_geo(tweet)
+    geotagged = \
+        place is not None or \
+        coord is not None or \
+        geooo is not None
+    return geotagged
