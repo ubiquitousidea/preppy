@@ -8,7 +8,8 @@ from preppy.tweet_properties import (
     get_country, get_date, get_id, get_latitude,
     get_longitude, get_place, get_region,
     get_state, get_text, get_user_id,
-    is_relevant, get_hashtags, get_words
+    is_relevant, get_hashtags, get_words,
+    get_user_place
 )
 
 
@@ -75,17 +76,39 @@ class ReportWriter(object):
     def make_table(self, tweets=None):
         """
         Return a pandas.DataFrame table of tweet information
+
+        Developer notes:
+        To add a column to this report, write a function that
+        can extract the information you want from a tweet (twitter.Status) object
+
+        Then add a tuple to the column_getters tuple:
+        tuple[0] should contain the column name
+        tuple[1] should contain the name of the function (not a call to the function)
+
+        The table constructor will pass this function two arguments:
+            First argument: a twitter.Status object (the 'tweet')
+            Second argument: a pointer to the TweetList object that contains tweet metadata
+
+            Accepting this TweetList argument allows the function to obtain
+            metadata about the tweet that is contained in the metadata dictionary
+            of the TweetList. See the function 'is_relevant', for example. Most
+            other functions don't use the TweetList argument and their signatures
+            are written to accept arbitrary positional arguments (*args). Writing
+            a function that accepts only one argument will result in an error.
+
         :param tweets: list of Tweets (twitter.Status instances)
         :return: pandas.DataFrame
         """
         if tweets is None:
             tweets = self.tweets.as_list()
 
+        # Add column names and information getter functions here.
         column_getters = (
             ("id", get_id),
             ("date", get_date),
             ("user", get_user_id),
             ("place", get_place),
+            ("user_place", get_user_place),
             ("country", get_country),
             ("longitude", get_longitude),
             ("latitude", get_latitude),
@@ -230,6 +253,19 @@ class ReportWriter(object):
         shuffle(tweets)
         report = self.make_table(tweets)
         if fmt == "csv":
+            report.to_csv(path)
+        elif fmt == "excel" or fmt == "xls":
+            report.to_excel(path)
+        else:
+            raise IOError("{:} is not a valid "
+                          "output format for this "
+                          "report.".format(fmt))
+
+    def write_report_all(self, path, fmt=None):
+        if fmt is None:
+            fmt = 'csv'
+        report = self.make_table()
+        if fmt == 'csv':
             report.to_csv(path)
         elif fmt == "excel" or fmt == "xls":
             report.to_excel(path)

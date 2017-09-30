@@ -152,7 +152,7 @@ def get_region(tweet, *args):
 
 def get_user_place(tweet, *args):
     try:
-        place = tweet.user.location
+        place = tweet.user['location']
         return place
     except:
         return missing
@@ -204,3 +204,9 @@ def has_geotag(tweet, *args):
         coord is not None or \
         geooo is not None
     return geotagged
+
+
+def has_user_place_or_geotag(tweet, *args):
+    hasgeotag = has_geotag(tweet)
+    hasuserplace = get_user_place(tweet) is not None
+    return hasgeotag or hasuserplace
