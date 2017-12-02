@@ -252,6 +252,6 @@ class Preppy(object):
     def cleanup_session(self):
         self.write_session_file()
         backup_session(self.backups_dir, self.session_file_path)
-        cull_old_files(self.backups_dir, n_keep=50)
+        cull_old_files(self.backups_dir, n_keep=10)
 
 

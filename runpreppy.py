@@ -80,6 +80,7 @@ with cd(wd):
         Session.tweets.export_geotagged_tweets("geotagged_tweets.json")
         reportwriter = ReportWriter(Session)
         reportwriter.write_report_all("all_tweets_report.xlsx", fmt='excel')
+        reportwriter.write_report_geo("geo_tweet_report.xlsx", fmt="excel")
         reportwriter.hashtag_table("hashtag_frequencies.json", min_freq=10)
         print("There are {:} geotagged tweets".format(reportwriter.how_many_geotagged()))
         print(reportwriter.country_counts())
