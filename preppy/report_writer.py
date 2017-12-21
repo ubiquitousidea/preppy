@@ -9,7 +9,7 @@ from preppy.tweet_properties import (
     get_longitude, get_place, get_region,
     get_state, get_text, get_user_id,
     is_relevant, get_hashtags, get_words,
-    get_user_place
+    get_user_place, get_id_str
 )
 
 
@@ -52,14 +52,14 @@ class ReportWriter(object):
         tweets = self.tweets.as_list(only_geo=True)
         return self.make_table(tweets)
 
-    def country_counts(self, min_count=3):
+    def country_counts(self, min_count=5):
         table = self.table
         counts = table.country.value_counts()
         if min_count > 0:
             counts = counts[counts >= min_count]
         return counts
 
-    def state_counts(self, min_count=3):
+    def state_counts(self, min_count=5):
         table = self.table
         counts = table.state.value_counts()
         if min_count > 0:
@@ -105,6 +105,7 @@ class ReportWriter(object):
         # Add column names and information getter functions here.
         column_getters = (
             ("id", get_id),
+            ("id_string", get_id_str),
             ("date", get_date),
             ("user", get_user_id),
             ("place", get_place),

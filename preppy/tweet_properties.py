@@ -17,6 +17,10 @@ def get_id(tweet, *args):
     return tweet.id
 
 
+def get_id_str(tweet, *args):
+    return tweet.id_str
+
+
 def get_date(tweet, *args):
     return tweet.created_at
 
