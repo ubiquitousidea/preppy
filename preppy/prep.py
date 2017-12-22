@@ -10,16 +10,15 @@ the language because of the Tornado and Scikit-Learn packages.
 
 import time
 import logging
-
+import requests
 from numpy.random import shuffle
-
 from getpass import getuser
 from preppy.tweet_list import TweetList
 from preppy.tweet_properties import is_relevant
 from preppy.misc import (
-    get_api, write_json, backup_session,
-    make_list, cull_old_files, ask_param,
-    CodeBook, MISSING, rehydrate_tweets
+    get_twitter_api, read_json, write_json,
+    backup_session, make_list, cull_old_files,
+    ask_param, CodeBook, MISSING, rehydrate_tweets
 )
 
 
@@ -41,7 +40,7 @@ class Preppy(object):
         else:
             self.tweets = TweetList()
         self.backups_dir = backup_dir
-        self.api = get_api(config_file)
+        self.api = get_twitter_api(config_file)
 
     @property
     def as_dict(self):
@@ -255,3 +254,132 @@ class Preppy(object):
         cull_old_files(self.backups_dir, n_keep=10)
 
 
+
+class DataObject(object):
+    """
+    A base object for storing and manipulating data
+    """
+    def __init__(self, data={}):
+        self._data = {}
+        self.data = data
+
+    @classmethod
+    def from_json(cls, fname, **kwargs):
+        """
+        Instantiate this class from a json file
+        :param fname: name of the json file that was
+            written by an instance of this class
+        :return: an instance of this class
+        """
+        d = read_json(fname)
+        return cls(d, **kwargs)
+
+    def to_json(self, fname):
+        """
+        Write out the contents of this class as a json file
+        :param fname: the name of the json file to write
+        :return: None
+        """
+        write_json(self.data, fname)
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, d):
+        if d is not None:
+            assert isinstance(d, dict)
+            self._data = d
+
+
+class PlaceCoordinates(DataObject):
+    def __init__(self, data={}, config_file=None):
+        """
+        Initialize a PlaceCoordinates class object
+        :param data: dictionary of the form
+            {place : coords, ...}
+        :param config_file: configuration file that
+            contains the api key for the requests
+        """
+        DataObject.__init__(self)
+        self.data = data
+        self.api_key = None
+        if config_file is not None:
+            configuration = read_json(config_file)
+            try:
+                self.api_key = configuration["google"]["keys"]["api_key"]
+            except KeyError:
+                raise UserWarning("Config json file must have key path google>keys>api_key. Google API not in use.")
+        self.url_geocode_resource = "https://maps.googleapis.com/maps/api/geocode/json?"
+        self.query_params = [
+            "address",
+            "key"
+        ]
+
+    def locate(self, place_name):
+        """
+        Return the coordinates of a place
+        :param place_name: the name of the place
+        :return: tuple of floats (latitude, longitude)
+        """
+        try:
+            self.validate_place_name(place_name)
+        except UserWarning as w:
+            return None
+
+        if self.data is not None and place_name in self.data:
+            coords = self.data.get(place_name)
+        else:
+            coords = self.get_coordinates(place_name)
+        return coords
+
+    def get_coordinates(self, place_name):
+        """
+        Get the coordinates of a place from
+            Google Geocoding API
+        :param place_name: name of the place
+        :return: tuple of floats
+        """
+        try:
+            url = self.query_url(place_name)
+            response = requests.get(
+                url=self.url_geocode_resource,
+                params={
+                    "address": place_name,
+                    "key": self.api_key
+                }
+            )
+            data = response.json()
+            location = data["results"][0]["geometry"]["location"]
+            coords = (location.get("lat"), location.get("lng"))
+            return coords
+        except:
+            raise UserWarning("An error occurred, cannot get coordinates for {}".format(place_name))
+            coords = None
+        self.data.update(place_name=coords)
+        return coords
+
+    def query_url(self, place_name):
+        """
+        Construct a query using a place name
+        :param place_name: name of a place
+        :return: a url (unicode string)
+        """
+        base_url = self.url_geocode_resource
+        return base_url.format(place_name, self.api_key)
+
+
+    def validate_place_name(self, name):
+        """
+        Raise a warning if the name sounds totally bogus.
+        :param name: the name of a place that a user may have
+        listed as their place in their profile.
+        :return: None
+        """
+        #TODO: Add better place validation here.
+        warn = UserWarning("\'{}\' is probalby not a real place. Skipping".format(name))
+        if name.lower() == "hell":
+            raise warn
+        elif name.split().__len__() > 5:
+            raise warn

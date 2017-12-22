@@ -253,7 +253,7 @@ def date_string(fmt=None):
     return now().strftime(fmt)
 
 
-def get_api(config_file):
+def get_twitter_api(config_file):
     """
     Instantiate a twitter.api.Api object
         from python-twitter package.
@@ -264,9 +264,11 @@ def get_api(config_file):
     """
     with open(config_file, "r") as f:
         config = json.load(f)
+    twitter_info = config.get("twitter")
+    keys = twitter_info.get("keys")
     api = Api(sleep_on_rate_limit=True,
               tweet_mode='extended',
-              **config)
+              **keys)
     return api
 
 
