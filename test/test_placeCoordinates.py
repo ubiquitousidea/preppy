@@ -10,7 +10,7 @@ class TestPlaceCoordinates(TestCase):
         :return: None
         """
         pc = PlaceCoordinates(config_file="./config.json")
-        place = "Bangkok Thailand"
+        place = "24 Hillhouse Ave, New Haven, CT, USA"
         coords = pc.locate(place)
         self.assertIsNotNone(coords)
         for x1, x2 in zip(coords, pc.data[place]):

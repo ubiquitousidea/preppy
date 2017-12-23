@@ -369,5 +369,5 @@ class PlaceCoordinates(DataObject):
         warn = UserWarning("\'{}\' is probably not a real place. Skipping".format(name))
         if name.lower() == "hell":
             raise warn
-        elif name.split().__len__() > 5:
+        elif name.split().__len__() > 20:
             raise warn
