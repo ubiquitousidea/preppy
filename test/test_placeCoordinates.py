@@ -1,5 +1,5 @@
 from unittest import TestCase
-from preppy import PlaceCoordinates
+from preppy import PlaceInfo
 
 
 class TestPlaceCoordinates(TestCase):
@@ -9,9 +9,9 @@ class TestPlaceCoordinates(TestCase):
         This test makes one API call to the Google Geocoding endpoint
         :return: None
         """
-        pc = PlaceCoordinates(config_file="./config.json")
+        pc = PlaceInfo(config_file="./config.json")
         place = "24 Hillhouse Ave, New Haven, CT, USA"
-        coords = pc.locate(place)
+        coords = pc.get_coordinates(place)
         self.assertIsNotNone(coords)
-        for x1, x2 in zip(coords, pc.data[place]):
+        for x1, x2 in zip(coords, pc.get_coordinates(place)):
             self.assertEqual(x1, x2)

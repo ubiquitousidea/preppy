@@ -239,7 +239,6 @@ class Preppy(object):
             if max_tweets != 0 and tweet_count >= max_tweets:
                 break
 
-
     def write_session_file(self):
         """
         Write a json file of the current session
@@ -292,7 +291,7 @@ class DataObject(object):
             self._data = d
 
 
-class PlaceCoordinates(DataObject):
+class PlaceInfo(DataObject):
     def __init__(self, data=None, config_file=None):
         """
         Initialize a PlaceCoordinates class object
@@ -310,64 +309,69 @@ class PlaceCoordinates(DataObject):
                 self.api_key = configuration["google"]["keys"]["api_key"]
             except KeyError:
                 raise KeyError("Config json file must have key path google>keys>api_key. Google API not in use.")
-        self.url_geocode_resource = "https://maps.googleapis.com/maps/api/geocode/json?"
-        self.query_params = [
-            "address",
-            "key"
-        ]
+        self.url_geocode_resource = "https://maps.googleapis.com/maps/api/geocode/json"
 
-    def locate(self, place_name):
+    def get_coordinates(self, place_name):
         """
         Return the coordinates of a place
         :param place_name: the name of the place
         :return: tuple of floats (latitude, longitude)
         """
-        try:
-            self.validate_place_name(place_name)
-        except UserWarning:
-            return None
-
-        if self.data is not None and place_name in self.data:
-            coords = self.data.get(place_name)
+        if place_name in self.data:
+            coords = self._get_coords_from_self(place_name)
         else:
-            coords = self.get_coordinates(place_name)
+            coords = self._get_coords_from_api(place_name)
         return coords
 
-    def get_coordinates(self, place_name):
+    def _get_coords_from_api(self, place_name):
         """
         Get the coordinates of a place from
             Google Geocoding API
+        Store the API response in self.data
+        Return the coordinates from that response
         :param place_name: name of the place
         :return: tuple of floats (latitude / longitude)
         """
-        try:
-            response = requests.get(
-                url=self.url_geocode_resource,
-                params={
-                    "address": place_name,
-                    "key": self.api_key
-                }
-            )
-            data = response.json()
-            location = data["results"][0]["geometry"]["location"]
-            coords = (location.get("lat"), location.get("lng"))
-        except:
-            logging.warning("An error occurred, cannot get coordinates for {}".format(place_name))
-            coords = None
-        self.data.update({place_name: coords})
+        response = requests.get(
+            url=self.url_geocode_resource,
+            params={
+                "address": place_name,
+                "key": self.api_key
+            }
+        )
+        results = self.store_results(place_name, response)
+        coords = self.get_coords_from_results(results)
         return coords
 
+    def _get_coords_from_self(self, place_name):
+        """
+        Get the coordinates of a place from the cached responses
+        :param place_name: name of the place (key in self.data)
+        :return: tuple of floats (latitude, longitude)
+        """
+        results = self.data.get(place_name)
+        return self.get_coords_from_results(results)
+
+    def store_results(self, place_name, response):
+        """
+        Store the results from a search in self.data
+        :param place_name: name of the place
+        :param response: http response object from google geocoding api
+        :return: results dict (parsed from json response)
+        """
+        results_dict = response.json()['results'][0]
+        self.data.update({place_name: results_dict})
+        return results_dict
+
     @staticmethod
-    def validate_place_name(name):
+    def get_coords_from_results(d):
         """
-        Raise a warning if the name sounds totally bogus.
-        :param name: the name of a place that a user may have
-        listed as their place in their profile.
-        :return: None
+        Get the coordinates of a place from the json response
+            returned by Google Geocoding API.
+        :param d: json response from the api. For example
+            response = requests.get(url, params)
+            d = response.json()['results'][0]
+        :return: (latitude, longitude).  A tuple of floats
         """
-        # TODO: Add better place validation here.
-        warn = UserWarning("\'{}\' is probably not a real place. Skipping".format(name))
-        if name.lower() == "hell":
-            raise warn
-        elif name.split().__len__() > 20:
-            raise warn
+        location_dict = d["geometry"]["location"]
+        return location_dict.get("lat"), location_dict.get("lng")
