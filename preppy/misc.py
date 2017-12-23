@@ -19,7 +19,7 @@ DT_FORMATS = {
 }
 
 
-class CodeBook:
+class CodeBook(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             logging.debug("Loading {:} into CodeBook".format(key))

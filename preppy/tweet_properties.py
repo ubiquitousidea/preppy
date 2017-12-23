@@ -74,6 +74,11 @@ def get_place(tweet, *args):
 
 
 def get_centroid(tweet, *args):
+    """
+    Get the centroid of the geotag bounding box
+    Note that twitter uses (latitude/longitude) instead
+        of the usual (longitude/latitude)
+    """
     try:
         bounding_box = array(
             tweet.place
