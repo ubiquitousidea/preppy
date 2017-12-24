@@ -295,6 +295,7 @@ class PlaceInfo(DataObject):
     def __init__(self, data=None, config_file=None):
         """
         Initialize a PlaceCoordinates class object
+
         :param data: dictionary of the form
             {place : coords, ...}
         :param config_file: configuration file that
@@ -323,14 +324,30 @@ class PlaceInfo(DataObject):
             coords = self._get_coords_from_api(place_name)
         return coords
 
-    def _get_coords_from_api(self, place_name):
+    def get_zip_code(self, place_name):
         """
-        Get the coordinates of a place from
-            Google Geocoding API
-        Store the API response in self.data
-        Return the coordinates from that response
-        :param place_name: name of the place
-        :return: tuple of floats (latitude / longitude)
+        Get the US Zip code of a place
+        :param place_name: the name of the place
+        :return: string representation of the zip code
+        """
+        if place_name in self.data:
+            zc = self._get_zip_code_from_self(place_name)
+        else:
+            zc = self._get_zip_code_from_api(place_name)
+        return zc
+
+    # ----------------------------------------------------------------
+    # - Protected methods -
+    # ----------------------------------------------------------------
+
+    def _query_geocode_api(self, place_name):
+        """
+        This is the method that makes a call to the Google Geocoding API
+        Store the resulting json dict in self.data
+        return the results that were stored
+        :param place_name: name of the place to search for
+        :return: dict
+            specifically: response.json()["results"][0]
         """
         response = requests.get(
             url=self.url_geocode_resource,
@@ -340,8 +357,30 @@ class PlaceInfo(DataObject):
             }
         )
         results = self.store_results(place_name, response)
-        coords = self.get_coords_from_results(results)
+        return results
+
+    def _get_coords_from_api(self, place_name):
+        """
+        Get the coordinates of a place from
+            Google Geocoding API
+        Store the API response in self.data
+        Return the coordinates from that response
+        :param place_name: name of the place
+        :return: tuple of floats (latitude / longitude)
+        """
+        results = self._query_geocode_api(place_name)
+        coords = self._get_coords_from_results(results)
         return coords
+
+    def _get_zip_code_from_api(self, place_name):
+        """
+
+        :param place_name:
+        :return:
+        """
+        results = self._query_geocode_api(place_name)
+        zc = self._get_zip_code_from_results(results)
+        return zc
 
     def _get_coords_from_self(self, place_name):
         """
@@ -350,7 +389,16 @@ class PlaceInfo(DataObject):
         :return: tuple of floats (latitude, longitude)
         """
         results = self.data.get(place_name)
-        return self.get_coords_from_results(results)
+        return self._get_coords_from_results(results)
+
+    def _get_zip_code_from_self(self, place_name):
+        """
+        Get the zip code of a place from the cached responses
+        :param place_name: name of the place
+        :return: string representation of the zip code
+        """
+        results = self.data.get(place_name)
+        return self._get_zip_code_from_results(results)
 
     def store_results(self, place_name, response):
         """
@@ -364,7 +412,7 @@ class PlaceInfo(DataObject):
         return results_dict
 
     @staticmethod
-    def get_coords_from_results(d):
+    def _get_coords_from_results(d):
         """
         Get the coordinates of a place from the json response
             returned by Google Geocoding API.
@@ -375,3 +423,25 @@ class PlaceInfo(DataObject):
         """
         location_dict = d["geometry"]["location"]
         return location_dict.get("lat"), location_dict.get("lng")
+
+    @staticmethod
+    def _get_zip_code_from_results(d):
+        """
+        Extract the zip code information from a results dictionary
+        :param d: dictionary of results from google
+        :return: string repr of zip code
+        """
+        def is_zip_code(cmp):
+            try:
+                return "postal_code" in cmp["types"]
+            except KeyError:
+                return False
+
+        iz = list(
+            map(
+                is_zip_code,
+                d.get("address_components")
+            )
+        )
+        zc = d.get("address_components")[iz.index(True)]["long_name"]
+        return zc
