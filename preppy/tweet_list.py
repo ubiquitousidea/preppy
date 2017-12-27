@@ -2,6 +2,7 @@ import logging
 
 from twitter import Status
 from numpy.random import shuffle
+from preppy.preptweet import PrepTweet
 from preppy.misc import (
     read_json,
     write_json,

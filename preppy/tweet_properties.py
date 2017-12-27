@@ -192,6 +192,7 @@ def get_geo(tweet, *args):
 
 
 def is_relevant(tweet, tweet_list):
+    #TODO: change this to get metadata in the new way (from PrepTweet)
     return tweet_list.get_metadata(tweet.id_str, "RELEVANCE")
 
 

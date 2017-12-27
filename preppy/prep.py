@@ -374,9 +374,9 @@ class PlaceInfo(DataObject):
 
     def _get_zip_code_from_api(self, place_name):
         """
-
-        :param place_name:
-        :return:
+        Get zip code of a place from the Google Geocoding API
+        :param place_name: name of a place
+        :return: string representation of zip code
         """
         results = self._query_geocode_api(place_name)
         zc = self._get_zip_code_from_results(results)
