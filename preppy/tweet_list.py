@@ -20,26 +20,19 @@ class TweetList(object):
     not present, and writing files.
     """
 
-    def __init__(self, tweets=None, metadata=None):
+    def __init__(self, tweets=None):
         """
         Return an instance of the TweetList class
+        this populates the tweets attribute with a dict of PrepTweet objects
         :param tweets: dict
             {'tweet_id_01': {tweet dict},
              'tweet_id_02': {tweet dict},...}
-        :param metadata: dict
-            {'tweet_id_01': {metadata dict},...}
         """
-        if tweets is None:
-            self.tweets = {}
-        else:
-            self.tweets = {id_str: PrepTweet.from_dict(preptweet)
-                           for id_str, preptweet
-                           in tweets.items()}
-        if metadata is None:
-            self._metadata = {}
-        else:
-            # TODO: Add mistake proofing
-            self._metadata = metadata
+        self.tweets = {
+            id_str: PrepTweet.from_dict(pt_dict)
+            for id_str, pt_dict
+            in tweets.items()
+        }
 
     def __getitem__(self, i):
         try:
@@ -57,14 +50,35 @@ class TweetList(object):
     def from_session_file(cls, path=None):
         """
         Instantiate this class using a session file
-        Format 1:
-            Session files are JSON files whose primary
-            key is tweet id string and whose value is
-            a dict representation of a tweet
-        Format 2:
-            Session file contains two primary keys: ("metadata", "tweets")
-            The "tweets" value is a dict in Format 1
-            The "metadata" value is a dict of metadata
+
+        Format I:
+        {
+            id_str: {
+                tweet dict
+            },...
+        }
+
+        Format II:
+        {
+            "metadata": {
+                id_str: {
+                    metadata_dict
+                },...
+            },
+            "tweets": {
+                id_str: {
+                    tweet_dict
+                },...
+            }
+        }
+
+        Format III (best yet!):
+        {
+            id_str: {
+                "status": {tweet dict},
+                "metadata": {metadata dict}
+            },...
+        }
         :param path: path to a valid json file
         :return: An instance of this class
         """
@@ -72,14 +86,28 @@ class TweetList(object):
             path = "preppy_session.json"
         _d = read_json(path)
         if _d is not None:
-            if "metadata" in _d.keys() and len(_d.keys()) == 2:
-                return cls(_d["tweets"], _d["metadata"])
-            elif len(_d.keys()) > 2:
+            fmt = cls.detect_format(_d)
+            if fmt == 1:
+                raise NotImplementedError("Instantiation from format I session files not yet supported")
+            elif fmt == 2:
+                raise NotImplementedError("Instantiation from format II session files not yet supported")
+            elif fmt == 3:
                 return cls(_d)
             else:
                 raise IOError("Unable to parse session file")
         else:
             return cls()
+
+    @staticmethod
+    def detect_format(_d):
+        """
+        Detect the format of a dictionary read from a session file
+        For format spec, see from_session_file() classmethod
+        :param _d: dictionary produced by reading json session file
+        :return: integer
+        """
+        # TODO: detect the format of the dict
+        return 2
 
     @property
     def id_list(self):
@@ -101,13 +129,13 @@ class TweetList(object):
         This method converts the Status objects to dictionaries
         :return: dict of dict representations of tweets (Statuses)
         """
-        output_tweets = {
-            k: v.AsDict()
+        # in the following dict comprehension,
+        # each v will be a PrepTweet instance
+        output = {
+            k: v.as_dict
             for k, v
             in self.tweets.items()
         }
-        output = {"tweets": output_tweets,
-                  "metadata": self._metadata}
         return output
 
     @property
@@ -115,7 +143,7 @@ class TweetList(object):
         """
         Return the tweets that have been coded as relevant
         as a list
-        :return: list of twitter.Status instances
+        :return: list of PrepTweet instances
         """
         output = [tweet for tweet in self.tweets.values()
                   if is_relevant(tweet, self) == 1]
@@ -127,7 +155,7 @@ class TweetList(object):
         """
         Return the tweets that have been coded as irrelevant
         as a list
-        :return: list of twitter.Status intances
+        :return: list of PrepTweet instances
         """
         output = [tweet for tweet in self.tweets.values()
                   if is_relevant(tweet, self) == 0]

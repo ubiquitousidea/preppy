@@ -22,6 +22,9 @@ class PrepTweet(object):
         """
         self.status = Status(**status)
         self.metadata = MetaData.from_dict(metadata)
+        for k, v in kwargs.items():
+            # set attributes for whatever else you want using keyword args
+            setattr(self, k, v)
 
     @property
     def as_dict(self):
@@ -43,3 +46,11 @@ class PrepTweet(object):
         assert "status" in d
         assert "metadata" in d
         return cls(**d)
+
+    @property
+    def is_relevant(self):
+        """
+        Determine, by some means, if if the tweet is relevant to the search terms
+        :return:
+        """
+        return self.metadata.relevance
