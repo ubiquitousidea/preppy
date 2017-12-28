@@ -1,6 +1,5 @@
 import logging
 
-from twitter import Status
 from numpy.random import shuffle
 from preppy.preptweet import PrepTweet
 from preppy.misc import (
@@ -33,8 +32,8 @@ class TweetList(object):
         if tweets is None:
             self.tweets = {}
         else:
-            self.tweets = {id_str: Status(**tweet_dict)
-                           for id_str, tweet_dict
+            self.tweets = {id_str: PrepTweet.from_dict(preptweet)
+                           for id_str, preptweet
                            in tweets.items()}
         if metadata is None:
             self._metadata = {}
