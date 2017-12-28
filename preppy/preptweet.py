@@ -24,7 +24,7 @@ class PrepTweet(object):
         self.metadata = MetaData.from_dict(metadata)
         for k, v in kwargs.items():
             # set attributes for whatever else you want using keyword args
-            setattr(self, k, v)
+            setattr(self, k.lower(), v)
 
     @property
     def as_dict(self):

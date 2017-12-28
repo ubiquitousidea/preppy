@@ -2,6 +2,7 @@ import logging
 
 from numpy.random import shuffle
 from preppy.preptweet import PrepTweet
+from preppy.metadata import MetaData
 from preppy.misc import (
     read_json,
     write_json,
@@ -202,10 +203,10 @@ class TweetList(object):
         """
         if tweet_format == "Status":
             def fn(_tweet):
-                return _tweet
+                return _tweet.status
         elif tweet_format == "dict":
             def fn(_tweet):
-                return _tweet.AsDict()
+                return _tweet.status.AsDict()
         else:
             msg = 'Tweet format can be \'dict\' or \'Status\''
             raise ValueError(msg)
@@ -247,7 +248,7 @@ class TweetList(object):
         :return: List of ID strings that were added
         """
         if isinstance(tweets, (list, tuple)):
-            tweet_dict = {tweet.id_str: tweet
+            tweet_dict = {tweet.status.id_str: tweet
                           for tweet in tweets}
         elif isinstance(tweets, dict):
             tweet_dict = tweets
@@ -270,9 +271,11 @@ class TweetList(object):
         :return: BoolType
         """
         try:
-            _ = self._metadata[id_str][variable_name][user_id]
+            metadata = self.tweets.get(id_str).metadata
+            assert isinstance(metadata, MetaData)
+            relevance = metadata.relevance
             return True
-        except KeyError:
+        except AttributeError:
             return False
 
     def get_metadata(self, id_str, param, user_id=None):
