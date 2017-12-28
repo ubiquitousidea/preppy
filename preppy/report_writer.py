@@ -124,7 +124,7 @@ class ReportWriter(object):
                         in column_getters]
         output_dict = {
             key: [
-                fn(tweet, self.tweets)
+                fn(tweet)
                 for tweet in tweets
             ]
             for key, fn
@@ -155,7 +155,7 @@ class ReportWriter(object):
         hashtag_table = {}
 
         for tweet in self.tweets.as_list():
-            relevant = is_relevant(tweet, self.tweets)
+            relevant = is_relevant(tweet)
             hashtags = get_hashtags(tweet)
             if not hashtags:
                 continue

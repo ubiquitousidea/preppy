@@ -64,6 +64,10 @@ for id_str in list(keys):
         metadata=metadata.get(id_str)
     )
 
-basename, ext = split_ext(fname)
-outFileName = basename + "_test" + ext
+if False:
+    basename, ext = split_ext(fname)
+    outFileName = basename + "_test" + ext
+else:
+    outFileName = fname
+
 write_json(output, outFileName)

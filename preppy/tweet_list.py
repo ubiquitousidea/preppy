@@ -108,7 +108,7 @@ class TweetList(object):
         :return: integer
         """
         # TODO: detect the format of the dict
-        return 2
+        return 3
 
     @property
     def id_list(self):
@@ -182,7 +182,7 @@ class TweetList(object):
             output = [tweet
                       for tweet
                       in self.tweets.values()]
-        output.sort(key=lambda _tweet: _tweet.id)
+        output.sort(key=lambda _tweet: _tweet.status.id)
         if randomize:
             shuffle(output)
         return output

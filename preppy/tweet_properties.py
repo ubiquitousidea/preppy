@@ -109,7 +109,7 @@ def get_latitude(tweet, *args):
 
 
 def get_country(tweet, *args):
-    assert isinstance(tweet, Status)
+    assert isinstance(tweet, PrepTweet)
     try:
         return tweet.status.place["country"]
     except:
@@ -192,9 +192,9 @@ def get_geo(tweet, *args):
         return missing
 
 
-def is_relevant(tweet, tweet_list):
+def is_relevant(tweet):
     assert isinstance(tweet, PrepTweet)
-    return tweet.metadata.relevance
+    return tweet.is_relevant
     # return tweet_list.get_metadata(tweet.id_str, "RELEVANCE")
 
 

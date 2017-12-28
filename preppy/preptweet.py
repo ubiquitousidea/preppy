@@ -53,4 +53,4 @@ class PrepTweet(object):
         Determine, by some means, if if the tweet is relevant to the search terms
         :return:
         """
-        return self.metadata.relevance
+        return self.metadata.is_relevant
