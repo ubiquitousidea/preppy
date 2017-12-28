@@ -262,14 +262,19 @@ def get_twitter_api(config_file):
         stored in config.json
     :return: twitter.api.Api
     """
-    with open(config_file, "r") as f:
-        config = json.load(f)
-    twitter_info = config.get("twitter")
-    keys = twitter_info.get("keys")
-    api = Api(sleep_on_rate_limit=True,
-              tweet_mode='extended',
-              **keys)
-    return api
+    try:
+        with open(config_file, "r") as f:
+            config = json.load(f)
+        twitter_info = config.get("twitter")
+        keys = twitter_info.get("keys")
+        api = Api(sleep_on_rate_limit=True,
+                  tweet_mode='extended',
+                  **keys)
+        return api
+    except:
+        logging.warning("Unable to connect to Twitter API. "
+                        "Other functionality still available")
+        return None
 
 
 def write_json(_dict, fn, pretty=True):
