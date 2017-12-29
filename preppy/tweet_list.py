@@ -1,16 +1,12 @@
 import logging
 
-from twitter import Status
 from numpy.random import shuffle
+from preppy.preptweet import PrepTweet
+from preppy.metadata import MetaData, CODE_BOOK
 from preppy.misc import (
     read_json,
-    write_json,
-    CodeBook
+    write_json
 )
-from preppy.tweet_properties import is_relevant, has_geotag
-
-
-CODE_BOOK = CodeBook.from_json()
 
 
 class TweetList(object):
@@ -20,26 +16,19 @@ class TweetList(object):
     not present, and writing files.
     """
 
-    def __init__(self, tweets=None, metadata=None):
+    def __init__(self, tweets=None):
         """
         Return an instance of the TweetList class
+        this populates the tweets attribute with a dict of PrepTweet objects
         :param tweets: dict
             {'tweet_id_01': {tweet dict},
              'tweet_id_02': {tweet dict},...}
-        :param metadata: dict
-            {'tweet_id_01': {metadata dict},...}
         """
-        if tweets is None:
-            self.tweets = {}
-        else:
-            self.tweets = {id_str: Status(**tweet_dict)
-                           for id_str, tweet_dict
-                           in tweets.items()}
-        if metadata is None:
-            self._metadata = {}
-        else:
-            # TODO: Add mistake proofing
-            self._metadata = metadata
+        self.tweets = {
+            id_str: PrepTweet.from_dict(pt_dict)
+            for id_str, pt_dict
+            in tweets.items()
+        }
 
     def __getitem__(self, i):
         try:
@@ -57,14 +46,35 @@ class TweetList(object):
     def from_session_file(cls, path=None):
         """
         Instantiate this class using a session file
-        Format 1:
-            Session files are JSON files whose primary
-            key is tweet id string and whose value is
-            a dict representation of a tweet
-        Format 2:
-            Session file contains two primary keys: ("metadata", "tweets")
-            The "tweets" value is a dict in Format 1
-            The "metadata" value is a dict of metadata
+
+        Format I:
+        {
+            id_str: {
+                tweet dict
+            },...
+        }
+
+        Format II:
+        {
+            "metadata": {
+                id_str: {
+                    metadata_dict
+                },...
+            },
+            "tweets": {
+                id_str: {
+                    tweet_dict
+                },...
+            }
+        }
+
+        Format III (best yet!):
+        {
+            id_str: {
+                "status": {tweet dict},
+                "metadata": {metadata dict}
+            },...
+        }
         :param path: path to a valid json file
         :return: An instance of this class
         """
@@ -72,14 +82,28 @@ class TweetList(object):
             path = "preppy_session.json"
         _d = read_json(path)
         if _d is not None:
-            if "metadata" in _d.keys() and len(_d.keys()) == 2:
-                return cls(_d["tweets"], _d["metadata"])
-            elif len(_d.keys()) > 2:
+            fmt = cls.detect_format(_d)
+            if fmt == 1:
+                raise NotImplementedError("Instantiation from format I session files not yet supported")
+            elif fmt == 2:
+                raise NotImplementedError("Instantiation from format II session files not yet supported")
+            elif fmt == 3:
                 return cls(_d)
             else:
                 raise IOError("Unable to parse session file")
         else:
             return cls()
+
+    @staticmethod
+    def detect_format(_d):
+        """
+        Detect the format of a dictionary read from a session file
+        For format spec, see from_session_file() classmethod
+        :param _d: dictionary produced by reading json session file
+        :return: integer
+        """
+        # TODO: detect the format of the dict
+        return 3
 
     @property
     def id_list(self):
@@ -101,13 +125,13 @@ class TweetList(object):
         This method converts the Status objects to dictionaries
         :return: dict of dict representations of tweets (Statuses)
         """
-        output_tweets = {
-            k: v.AsDict()
+        # in the following dict comprehension,
+        # each v will be a PrepTweet instance
+        output = {
+            k: v.as_dict
             for k, v
             in self.tweets.items()
         }
-        output = {"tweets": output_tweets,
-                  "metadata": self._metadata}
         return output
 
     @property
@@ -115,10 +139,10 @@ class TweetList(object):
         """
         Return the tweets that have been coded as relevant
         as a list
-        :return: list of twitter.Status instances
+        :return: list of PrepTweet instances
         """
         output = [tweet for tweet in self.tweets.values()
-                  if is_relevant(tweet, self) == 1]
+                  if tweet.is_relevant == 1]
         output.sort(key=lambda _tweet: _tweet.id)
         return output
 
@@ -127,10 +151,10 @@ class TweetList(object):
         """
         Return the tweets that have been coded as irrelevant
         as a list
-        :return: list of twitter.Status intances
+        :return: list of PrepTweet instances
         """
         output = [tweet for tweet in self.tweets.values()
-                  if is_relevant(tweet, self) == 0]
+                  if tweet.is_relevant == 0]
         output.sort(key=lambda _tweet: _tweet.id)
         return output
 
@@ -148,7 +172,7 @@ class TweetList(object):
             output = [tweet
                       for tweet
                       in self.tweets.values()
-                      if has_geotag(tweet)]
+                      if tweet.has_geotag]
         else:
             output = [tweet
                       for tweet
@@ -177,14 +201,14 @@ class TweetList(object):
                 return _tweet
         elif tweet_format == "dict":
             def fn(_tweet):
-                return _tweet.AsDict()
+                return _tweet.as_dict
         else:
             msg = 'Tweet format can be \'dict\' or \'Status\''
             raise ValueError(msg)
         geo_tweets = {id_str: fn(tweet)
                       for id_str, tweet
                       in self.tweets.items()
-                      if has_geotag(tweet)}
+                      if tweet.has_geotag}
         return geo_tweets
 
     def export_geotagged_tweets(self, path=None):
@@ -242,12 +266,22 @@ class TweetList(object):
         :return: BoolType
         """
         try:
-            _ = self._metadata[id_str][variable_name][user_id]
+            metadata = self.get_metadata_obj(id_str)
+            assert isinstance(metadata, MetaData)
+            var = getattr(metadata, variable_name)
+            value = var.get(user_id)
             return True
-        except KeyError:
+        except AttributeError:
             return False
 
-    def get_metadata(self, id_str, param, user_id=None):
+    def get_metadata_obj(self, id_str):
+        try:
+            tweet = self.tweets[id_str]
+            return tweet.metadata
+        except:
+            return None
+
+    def get_metadata_value(self, id_str, param, user_id=None):
         """
         Get the metadata parameter value for a tweet
         :param id_str: the ID of the tweet
@@ -260,7 +294,7 @@ class TweetList(object):
         output = None
         assert isinstance(id_str, str)
         try:
-            tweet_metadata = self._metadata[id_str]
+            tweet_metadata = self.tweets.get(id_str).get("metadata")
         except KeyError:
             return output
         try:
@@ -293,9 +327,21 @@ class TweetList(object):
         """
         assert param in CODE_BOOK.variable_names
         if param is None:
-            self._metadata[id_str] = {}
+            try:
+                self.tweets[id_str].metadata = MetaData()
+            except:
+                logging.warning("Did not clear metadata for tweet {}".format(id_str))
+                pass
         else:
-            self._metadata[id_str][param] = {}
+            try:
+                pt = self.tweets.get(id_str)
+                assert isinstance(pt, PrepTweet)
+                md = pt.metadata
+                assert isinstance(md, MetaData)
+                setattr(md, param, {})
+            except:
+                logging.warning("Did not clear metadata for param {}, tweet {}".format(param, id_str))
+                pass
 
     def record_metadata(self, id_str, param, user_id, value):
         """
@@ -314,17 +360,9 @@ class TweetList(object):
         :param value: the value of the variable to record
         """
         assert id_str in self.tweets
-        if id_str not in self._metadata:
-            self._metadata[id_str] = {}
-        if param not in self._metadata[id_str]:
-            self._metadata[id_str][param] = {}
-        possible_values = CODE_BOOK.possible_values(param)
-        if value in possible_values:
-            self._metadata[id_str][param].update({user_id: value})
-        else:
-            logging.warning("Attempt was made to insert "
-                            "\'{:}\' into param: \'{:}\'"
-                            .format(value, param))
+        pt = self.tweets.get(id_str)
+        assert isinstance(pt, PrepTweet)
+        pt.metadata.record(param, user_id, value)
 
     def predict_metadata(self, id_str, var_name):
         """
@@ -347,8 +385,8 @@ class TweetList(object):
             raise ValueError("{:} is not in the Code Book"
                              .format(variable_name))
         n = 0
-        for id_str, var_dict in self._metadata.items():
-            if variable_name in var_dict:
+        for preptweet in self.tweets.values():
+            if preptweet.has_coded(variable_name):
                 n += 1
         return n
 

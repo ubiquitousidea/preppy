@@ -166,6 +166,19 @@ def cull_old_files(_dir=None, n_keep=10):
             os.remove(file_path)
 
 
+def get_latest_file(_dir=None):
+    """
+    Determine the path to the latest backup file
+    :param _dir: directory to search
+    :return: path to backup file
+    """
+    with cd(_dir):
+        file_list = os.listdir(".")
+        file_list.sort(key=date_modified)
+        latest_file = file_list[-1]
+        return os.path.join(_dir, latest_file)
+
+
 def get_text_from_api(tweet, api):
     assert isinstance(tweet, Status)
     assert isinstance(api, Api)
@@ -186,7 +199,7 @@ def ask_param(param_name, tweet, api=None):
         web based retrieval of the tweet text
     :return:
     """
-    assert isinstance(tweet, Status)
+    # assert isinstance(tweet, PrepTweet)
     if api is not None:
         assert isinstance(api, Api)
     if hasattr(tweet, "full_text") and tweet.full_text is not None:

@@ -3,14 +3,8 @@ from pandas import DataFrame
 from preppy import (
     TweetList, Preppy
 )
+from preppy.preptweet import PrepTweet
 from preppy.misc import write_json, enforce_extension
-from preppy.tweet_properties import (
-    get_country, get_date, get_id, get_latitude,
-    get_longitude, get_place, get_region,
-    get_state, get_text, get_user_id,
-    is_relevant, get_hashtags, get_words,
-    get_user_place, get_id_str
-)
 
 
 class ReportWriter(object):
@@ -78,23 +72,13 @@ class ReportWriter(object):
         Return a pandas.DataFrame table of tweet information
 
         Developer notes:
-        To add a column to this report, write a function that
-        can extract the information you want from a tweet (twitter.Status) object
+        To add a column to this report, write a property in PrepTweet class that
+        can extract the information you want from itself.
 
         Then add a tuple to the column_getters tuple:
         tuple[0] should contain the column name
-        tuple[1] should contain the name of the function (not a call to the function)
-
-        The table constructor will pass this function two arguments:
-            First argument: a twitter.Status object (the 'tweet')
-            Second argument: a pointer to the TweetList object that contains tweet metadata
-
-            Accepting this TweetList argument allows the function to obtain
-            metadata about the tweet that is contained in the metadata dictionary
-            of the TweetList. See the function 'is_relevant', for example. Most
-            other functions don't use the TweetList argument and their signatures
-            are written to accept arbitrary positional arguments (*args). Writing
-            a function that accepts only one argument will result in an error.
+        tuple[1] should contain the name of the property that will
+            be called (using getattr)
 
         :param tweets: list of Tweets (twitter.Status instances)
         :return: pandas.DataFrame
@@ -104,30 +88,29 @@ class ReportWriter(object):
 
         # Add column names and information getter functions here.
         column_getters = (
-            ("id", get_id),
-            ("id_string", get_id_str),
-            ("date", get_date),
-            ("user", get_user_id),
-            ("place", get_place),
-            ("user_place", get_user_place),
-            ("country", get_country),
-            ("longitude", get_longitude),
-            ("latitude", get_latitude),
-            ("state", get_state),
-            ("us_region", get_region),
-            ("text", get_text),
-            ("hashtags", get_hashtags),
-            ("relevance", is_relevant),
+            ("id_string", "id_str"),
+            ("date", "date"),
+            ("user", "user_id_str"),
+            ("place", "place"),
+            ("user_place", "user_place"),
+            ("country", "country"),
+            ("longitude", "longitude"),
+            ("latitude", "latitude"),
+            ("state", "state"),
+            ("us_region", "region"),
+            ("text", "text"),
+            ("hashtags", "hashtags"),
+            ("relevance", "is_relevant"),
         )
         column_order = [column_getter[0]
                         for column_getter
                         in column_getters]
         output_dict = {
-            key: [
-                fn(tweet, self.tweets)
+            col_name: [
+                getattr(tweet, tweet_property_name)
                 for tweet in tweets
             ]
-            for key, fn
+            for col_name, tweet_property_name
             in column_getters
         }
         output = DataFrame.from_dict(output_dict)
@@ -155,8 +138,9 @@ class ReportWriter(object):
         hashtag_table = {}
 
         for tweet in self.tweets.as_list():
-            relevant = is_relevant(tweet, self.tweets)
-            hashtags = get_hashtags(tweet)
+            assert isinstance(tweet, PrepTweet)
+            relevant = tweet.is_relevant
+            hashtags = tweet.hashtags
             if not hashtags:
                 continue
             for tag in hashtags:
@@ -214,11 +198,13 @@ class ReportWriter(object):
         """
         relevant_words = {}  # a set
         for tweet in self.tweets.relevant:
-            relevant_words.update(get_words(tweet))
+            assert isinstance(tweet, PrepTweet)
+            relevant_words.update(tweet.text.split())
 
         irrelevant_words = {}  # a set
         for tweet in self.tweets.irrelevant:
-            irrelevant_words.update(get_words(tweet))
+            assert isinstance(tweet, PrepTweet)
+            irrelevant_words.update(tweet.text.split())
         return None
 
     def write_report_geo(self, path, fmt='csv'):

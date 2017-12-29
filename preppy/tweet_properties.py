@@ -4,6 +4,7 @@ import os
 from twitter import Status
 from numpy import array, zeros
 from preppy.misc import MISSING, read_json, ReverseLookup
+from preppy.preptweet import PrepTweet
 
 
 missing = MISSING
@@ -14,20 +15,20 @@ regions = ReverseLookup(d["regions"])
 
 
 def get_id(tweet, *args):
-    return tweet.id
+    return tweet.status.id
 
 
 def get_id_str(tweet, *args):
-    return tweet.id_str
+    return tweet.status.id_str
 
 
 def get_date(tweet, *args):
-    return tweet.created_at
+    return tweet.status.created_at
 
 
 def get_user_id(tweet, *args):
     try:
-        return tweet.user['id']
+        return tweet.status.user['id']
     except:
         return missing
 
@@ -37,7 +38,7 @@ def get_hashtags(tweet, *args):
     Return a list of the hashtag texts
     """
     try:
-        return [tag["text"] for tag in tweet.hashtags]
+        return [tag["text"] for tag in tweet.status.hashtags]
     except:
         return missing
 
@@ -56,9 +57,9 @@ def get_hashtag_stringlist(tweet, *args):
 
 def get_text(tweet, *args):
     try:
-        if tweet.full_text:
+        if tweet.status.full_text:
             return tweet.full_text
-        elif tweet.text:
+        elif tweet.status.text:
             return tweet.text
         else:
             return missing
@@ -68,7 +69,7 @@ def get_text(tweet, *args):
 
 def get_place(tweet, *args):
     try:
-        return tweet.place["full_name"]
+        return tweet.status.place["full_name"]
     except:
         return missing
 
@@ -81,7 +82,7 @@ def get_centroid(tweet, *args):
     """
     try:
         bounding_box = array(
-            tweet.place
+            tweet.status.place
             ["bounding_box"]
             ["coordinates"]
         ).squeeze()
@@ -108,9 +109,9 @@ def get_latitude(tweet, *args):
 
 
 def get_country(tweet, *args):
-    assert isinstance(tweet, Status)
+    assert isinstance(tweet, PrepTweet)
     try:
-        return tweet.place["country"]
+        return tweet.status.place["country"]
     except:
         return missing
 
@@ -130,15 +131,15 @@ def get_state(tweet, *args):
     :param tweet:
     :return:
     """
-    assert isinstance(tweet, Status)
+    assert isinstance(tweet, PrepTweet)
     state_code = missing
     try:
-        country_code = tweet.place["country_code"]
+        country_code = tweet.status.place["country_code"]
     except TypeError:
         return missing
-    place_type = tweet.place["place_type"]
+    place_type = tweet.status.place["place_type"]
     if country_code == "US" and place_type == "city":
-        full_name = tweet.place["full_name"]
+        full_name = tweet.status.place["full_name"]
         state_code = full_name.split(",")[-1].strip().upper()
         state_code = state_code if state_code in valid_state_codes else missing
     else:
@@ -161,7 +162,7 @@ def get_region(tweet, *args):
 
 def get_user_place(tweet, *args):
     try:
-        place = tweet.user['location']
+        place = tweet.status.user['location']
         return place
     except:
         return missing
@@ -176,7 +177,7 @@ def get_coordinates(tweet, *args):
     :return: Coordinates
     """
     try:
-        return tweet.coordinates
+        return tweet.status.coordinates
     except:
         return missing
 
@@ -186,13 +187,15 @@ def get_geo(tweet, *args):
     Return the geo attribute of the tweet
     """
     try:
-        return tweet.geo
+        return tweet.status.geo
     except:
         return missing
 
 
-def is_relevant(tweet, tweet_list):
-    return tweet_list.get_metadata(tweet.id_str, "RELEVANCE")
+def is_relevant(tweet):
+    assert isinstance(tweet, PrepTweet)
+    return tweet.is_relevant
+    # return tweet_list.get_metadata(tweet.id_str, "RELEVANCE")
 
 
 def get_words(tweet, *args):
