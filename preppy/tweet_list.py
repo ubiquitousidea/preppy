@@ -28,7 +28,7 @@ class TweetList(object):
             id_str: PrepTweet.from_dict(pt_dict)
             for id_str, pt_dict
             in tweets.items()
-        }
+        } if tweets is not None else {}
 
     def __getitem__(self, i):
         try:
@@ -243,8 +243,8 @@ class TweetList(object):
         :return: List of ID strings that were added
         """
         if isinstance(tweets, (list, tuple)):
-            tweet_dict = {tweet.id_str: tweet
-                          for tweet in tweets}
+            tweet_dict = {status.id_str: PrepTweet(status)
+                          for status in tweets}
         elif isinstance(tweets, dict):
             tweet_dict = tweets
         elif isinstance(tweets, TweetList):
@@ -254,6 +254,7 @@ class TweetList(object):
                 'Cannot add tweet from {:}'
                 .format(type(tweets))
             )
+
         self.tweets.update(tweet_dict)
 
     def user_has_encoded(self, user_id, variable_name, id_str):

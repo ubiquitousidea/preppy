@@ -15,7 +15,6 @@ from numpy.random import shuffle
 from getpass import getuser
 from preppy.tweet_list import TweetList
 from preppy.preptweet import PrepTweet, CODE_BOOK
-from preppy.tweet_properties import is_relevant
 from preppy.misc import (
     get_twitter_api, read_json, write_json,
     backup_session, make_list, cull_old_files,
