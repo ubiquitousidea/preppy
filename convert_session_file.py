@@ -39,35 +39,32 @@ from os.path import splitext as split_ext
 from preppy.misc import read_json, backup_session, write_json
 
 
+testing = False
+fname = "preppy_session.json"
+
+
 """
 Expecting session file name as the first command 
 line argument after the script name of this file
 """
 
-try:
-    fname = sys.argv[1]
-except:
-    fname = "preppy_session.json"
-backup_session("backups", fname)
+# backup_session("backups", fname)
 d = read_json(fname)
 metadata = d['metadata']
 tweets = d['tweets']
 
 output = {}
 
-k1 = metadata.keys()
-k2 = metadata.keys()
+k1 = list(metadata.keys())
+k2 = list(tweets.keys())
 keys = set(k1).union(k2)
+print("Input file contains {} tweets".format(len(keys)))
 for id_str in list(keys):
     output[id_str] = dict(
-        status=tweets.get(id_str),
-        metadata=metadata.get(id_str)
+        status=tweets.get(id_str, {}),
+        metadata=metadata.get(id_str, {})
     )
+print("Output file contains {} tweets".format(len(output)))
 
-if False:
-    basename, ext = split_ext(fname)
-    outFileName = basename + "_test" + ext
-else:
-    outFileName = fname
 
-write_json(output, outFileName)
+write_json(output, fname)
