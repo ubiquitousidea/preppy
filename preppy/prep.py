@@ -14,15 +14,13 @@ import requests
 from numpy.random import shuffle
 from getpass import getuser
 from preppy.tweet_list import TweetList
+from preppy.preptweet import PrepTweet, CODE_BOOK
 from preppy.tweet_properties import is_relevant
 from preppy.misc import (
     get_twitter_api, read_json, write_json,
     backup_session, make_list, cull_old_files,
     ask_param, CodeBook, MISSING, rehydrate_tweets
 )
-
-
-CODE_BOOK = CodeBook.from_json()
 
 
 class Preppy(object):
@@ -198,13 +196,14 @@ class Preppy(object):
         tweets = self.tweets.as_list(only_geo, randomize)
         tweet_count = 0
         for tweet in tweets:
+            assert isinstance(tweet, PrepTweet)
             if self.tweets.user_has_encoded(
                     user_id, variable_name, tweet.id_str):
                 # If this user has already encoded that
                 # variable, do not show the tweet again
                 continue
 
-            p_relevance = is_relevant(tweet, self.tweets)
+            p_relevance = tweet.is_relevant
 
             if variable_name != "RELEVANCE" \
                     and p_relevance is not None \

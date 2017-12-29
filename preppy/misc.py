@@ -199,7 +199,7 @@ def ask_param(param_name, tweet, api=None):
         web based retrieval of the tweet text
     :return:
     """
-    assert isinstance(tweet, Status)
+    # assert isinstance(tweet, PrepTweet)
     if api is not None:
         assert isinstance(api, Api)
     if hasattr(tweet, "full_text") and tweet.full_text is not None:

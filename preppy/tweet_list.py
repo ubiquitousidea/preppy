@@ -2,16 +2,11 @@ import logging
 
 from numpy.random import shuffle
 from preppy.preptweet import PrepTweet
-from preppy.metadata import MetaData
+from preppy.metadata import MetaData, CODE_BOOK
 from preppy.misc import (
     read_json,
-    write_json,
-    CodeBook
+    write_json
 )
-from preppy.tweet_properties import is_relevant, has_geotag
-
-
-CODE_BOOK = CodeBook.from_json()
 
 
 class TweetList(object):
@@ -147,7 +142,7 @@ class TweetList(object):
         :return: list of PrepTweet instances
         """
         output = [tweet for tweet in self.tweets.values()
-                  if is_relevant(tweet, self) == 1]
+                  if tweet.is_relevant == 1]
         output.sort(key=lambda _tweet: _tweet.id)
         return output
 
@@ -159,7 +154,7 @@ class TweetList(object):
         :return: list of PrepTweet instances
         """
         output = [tweet for tweet in self.tweets.values()
-                  if is_relevant(tweet, self) == 0]
+                  if tweet.is_relevant == 0]
         output.sort(key=lambda _tweet: _tweet.id)
         return output
 
@@ -177,12 +172,12 @@ class TweetList(object):
             output = [tweet
                       for tweet
                       in self.tweets.values()
-                      if has_geotag(tweet)]
+                      if tweet.has_geotag]
         else:
             output = [tweet
                       for tweet
                       in self.tweets.values()]
-        output.sort(key=lambda _tweet: _tweet.status.id)
+        output.sort(key=lambda _tweet: _tweet.id)
         if randomize:
             shuffle(output)
         return output
@@ -203,17 +198,17 @@ class TweetList(object):
         """
         if tweet_format == "Status":
             def fn(_tweet):
-                return _tweet.status
+                return _tweet
         elif tweet_format == "dict":
             def fn(_tweet):
-                return _tweet.status.AsDict()
+                return _tweet.as_dict
         else:
             msg = 'Tweet format can be \'dict\' or \'Status\''
             raise ValueError(msg)
         geo_tweets = {id_str: fn(tweet)
                       for id_str, tweet
                       in self.tweets.items()
-                      if has_geotag(tweet)}
+                      if tweet.has_geotag}
         return geo_tweets
 
     def export_geotagged_tweets(self, path=None):
@@ -248,7 +243,7 @@ class TweetList(object):
         :return: List of ID strings that were added
         """
         if isinstance(tweets, (list, tuple)):
-            tweet_dict = {tweet.status.id_str: tweet
+            tweet_dict = {tweet.id_str: tweet
                           for tweet in tweets}
         elif isinstance(tweets, dict):
             tweet_dict = tweets
@@ -271,14 +266,22 @@ class TweetList(object):
         :return: BoolType
         """
         try:
-            metadata = self.tweets.get(id_str).metadata
+            metadata = self.get_metadata_obj(id_str)
             assert isinstance(metadata, MetaData)
-            relevance = metadata.relevance
+            var = getattr(metadata, variable_name)
+            value = var.get(user_id)
             return True
         except AttributeError:
             return False
 
-    def get_metadata(self, id_str, param, user_id=None):
+    def get_metadata_obj(self, id_str):
+        try:
+            tweet = self.tweets[id_str]
+            return tweet.metadata
+        except:
+            return None
+
+    def get_metadata_value(self, id_str, param, user_id=None):
         """
         Get the metadata parameter value for a tweet
         :param id_str: the ID of the tweet
@@ -291,7 +294,7 @@ class TweetList(object):
         output = None
         assert isinstance(id_str, str)
         try:
-            tweet_metadata = self._metadata[id_str]
+            tweet_metadata = self.tweets.get(id_str).get("metadata")
         except KeyError:
             return output
         try:
@@ -324,9 +327,21 @@ class TweetList(object):
         """
         assert param in CODE_BOOK.variable_names
         if param is None:
-            self._metadata[id_str] = {}
+            try:
+                self.tweets[id_str].metadata = MetaData()
+            except:
+                logging.warning("Did not clear metadata for tweet {}".format(id_str))
+                pass
         else:
-            self._metadata[id_str][param] = {}
+            try:
+                pt = self.tweets.get(id_str)
+                assert isinstance(pt, PrepTweet)
+                md = pt.metadata
+                assert isinstance(md, MetaData)
+                setattr(md, param, {})
+            except:
+                logging.warning("Did not clear metadata for param {}, tweet {}".format(param, id_str))
+                pass
 
     def record_metadata(self, id_str, param, user_id, value):
         """
@@ -345,17 +360,9 @@ class TweetList(object):
         :param value: the value of the variable to record
         """
         assert id_str in self.tweets
-        if id_str not in self._metadata:
-            self._metadata[id_str] = {}
-        if param not in self._metadata[id_str]:
-            self._metadata[id_str][param] = {}
-        possible_values = CODE_BOOK.possible_values(param)
-        if value in possible_values:
-            self._metadata[id_str][param].update({user_id: value})
-        else:
-            logging.warning("Attempt was made to insert "
-                            "\'{:}\' into param: \'{:}\'"
-                            .format(value, param))
+        pt = self.tweets.get(id_str)
+        assert isinstance(pt, PrepTweet)
+        pt.metadata.record(param, user_id, value)
 
     def predict_metadata(self, id_str, var_name):
         """
@@ -378,8 +385,8 @@ class TweetList(object):
             raise ValueError("{:} is not in the Code Book"
                              .format(variable_name))
         n = 0
-        for id_str, var_dict in self._metadata.items():
-            if variable_name in var_dict:
+        for preptweet in self.tweets.values():
+            if preptweet.has_coded(variable_name):
                 n += 1
         return n
 
