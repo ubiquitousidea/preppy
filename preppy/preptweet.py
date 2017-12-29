@@ -78,10 +78,6 @@ class PrepTweet(object):
         :return: str
         """
         return self.status.id_str
-        # try:
-        #     return self.status.id_str
-        # except AttributeError:
-        #     return self.MISSING
 
     @property
     def id(self):
@@ -89,10 +85,8 @@ class PrepTweet(object):
         Return the unique ID (integer) of the Tweet
         :return: int
         """
-        try:
-            return self.status.id
-        except AttributeError:
-            return self.MISSING
+        return self.status.id
+
 
     @property
     def date(self):

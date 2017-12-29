@@ -22,7 +22,7 @@ def _parse_args():
                         help="If provided, reports will be written",
                         action="store_true",
                         default=False)
-    parser.add_argument("-ntweets", "--ntweets",
+    parser.add_argument("-ntweets", "--ntweets", "-ntweet", "--ntweet",
                         help="How many tweets? can be used for -encode",
                         default=0, type=int)
     parser.add_argument("-updatetweets",
@@ -70,12 +70,15 @@ with cd(wd):
         logging.info("Retrieving new tweets")
         Session.get_more_tweets(terms)
     if encode:
-        Session.encode_variable(
-            variable_name=encode,
-            max_tweets=ntweets,
-            only_geo=True
-        )
-        Session.tweets.tweets_coding_status()
+        if encode == "user_place":
+            Session.encode_user_location(nmax=ntweets)
+        else:
+            Session.encode_variable(
+                variable_name=encode,
+                max_tweets=ntweets,
+                only_geo=True
+            )
+            Session.tweets.tweets_coding_status()
     if report:
         Session.tweets.export_geotagged_tweets("geotagged_tweets.json")
         reportwriter = ReportWriter(Session)

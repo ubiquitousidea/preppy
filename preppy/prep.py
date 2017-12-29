@@ -25,10 +25,14 @@ from preppy.misc import (
 class Preppy(object):
     def __init__(self, session_file_path,
                  backup_dir=None,
-                 config_file=None):
+                 config_file=None,
+                 place_info=None):
         """
         Return an instance of Preppy class
         :param str session_file_path: Name of a session file (optional)
+        :param backup_dir: path to backups directory
+        :param config_file: path to configuration file that contains the API keys
+        :param place_info: path to the place info file (from PlaceInfo.to_json())
         """
         self.session_file_path = session_file_path
         if session_file_path:
@@ -38,6 +42,7 @@ class Preppy(object):
             self.tweets = TweetList()
         self.backups_dir = backup_dir
         self.api = get_twitter_api(config_file)
+        self.placeinfo = PlaceInfo.from_json(fname="place_info.json", config_file=config_file)
 
     @property
     def as_dict(self):
@@ -156,6 +161,31 @@ class Preppy(object):
         self.tweets.add_tweets(tweetlist)
         len2 = len(self.tweets)
         return len2 - len1
+
+    def encode_user_location(self, nmax=None):
+        """
+        For each tweet that has user location attribute, encode location
+        coordiantes for that tweet using the PlaceInfo class (which uses
+        the Google Geocoding API)
+        :return: NoneType
+        """
+        n = 0
+        for tweet in self.tweets.tweets.values():
+            assert isinstance(tweet, PrepTweet)
+            place_name = tweet.user_place
+            if place_name is None:
+                continue
+            coords = self.placeinfo.get_coordinates(place_name)
+            if coords:
+                print("Place Name: {}, Coordinates {}".format(place_name, coords))
+                tweet.metadata.record("user_place_coordinates", "google_geocoding", coords)
+                n += 1
+            if n >= nmax:
+                break
+        print("Successfully encoded {} user place coordinates".format(n))
+        print("Did so by making {} api calls to Google".format(self.placeinfo.api_counter))
+        self.placeinfo.to_json("place_info.json")
+
 
     def rehydrate_tweets(self):
         """
@@ -309,6 +339,7 @@ class PlaceInfo(DataObject):
             except KeyError:
                 raise KeyError("Config json file must have key path google>keys>api_key. Google API not in use.")
         self.url_geocode_resource = "https://maps.googleapis.com/maps/api/geocode/json"
+        self.api_counter = 0
 
     def get_coordinates(self, place_name):
         """
@@ -354,6 +385,7 @@ class PlaceInfo(DataObject):
                 "key": self.api_key
             }
         )
+        self.api_counter += 1
         results = self.store_results(place_name, response)
         return results
 
@@ -405,8 +437,12 @@ class PlaceInfo(DataObject):
         :param response: http response object from google geocoding api
         :return: results dict (parsed from json response)
         """
-        results_dict = response.json()['results'][0]
-        self.data.update({place_name: results_dict})
+        try:
+            results_dict = response.json()['results'][0]
+        except:
+            results_dict = {}
+        if place_name is not None:
+            self.data.update({place_name: results_dict})
         return results_dict
 
     @staticmethod
@@ -419,8 +455,12 @@ class PlaceInfo(DataObject):
             d = response.json()['results'][0]
         :return: (latitude, longitude).  A tuple of floats
         """
-        location_dict = d["geometry"]["location"]
-        return location_dict.get("lat"), location_dict.get("lng")
+        try:
+            location_dict = d["geometry"]["location"]
+            coords = location_dict.get("lat"), location_dict.get("lng")
+            return coords
+        except:
+            return MISSING
 
     @staticmethod
     def _get_zip_code_from_results(d):
@@ -434,12 +474,14 @@ class PlaceInfo(DataObject):
                 return "postal_code" in cmp["types"]
             except KeyError:
                 return False
-
-        iz = list(
-            map(
-                is_zip_code,
-                d.get("address_components")
+        try:
+            iz = list(
+                map(
+                    is_zip_code,
+                    d.get("address_components")
+                )
             )
-        )
-        zc = d.get("address_components")[iz.index(True)]["long_name"]
-        return zc
+            zc = d.get("address_components")[iz.index(True)]["long_name"]
+            return zc
+        except:
+            return MISSING
