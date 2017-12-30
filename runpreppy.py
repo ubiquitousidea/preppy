@@ -49,8 +49,21 @@ ntweets = args.ntweets
 updatetweets = args.updatetweets
 noclean = args.noclean
 
+# Configure logging here
+logger = logging.getLogger('preppy')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler("preppy.log")
+fh.setLevel(logging.DEBUG)
+sh = logging.StreamHandler()
+sh.setLevel(logging.DEBUG)
+fm = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+fh.setFormatter(fm)
+sh.setFormatter(fm)
+logger.addHandler(fh)
+logger.addHandler(sh)
+
 with cd(wd):
-    logging.info("Starting Preppy Session")
+    logger.info("Starting Preppy Session")
     session_file = "preppy_session.json"
 
     Session = Preppy(
@@ -59,15 +72,15 @@ with cd(wd):
         backup_dir='backups'
     )
 
-    logging.info("Opened {:} session file"
-                 .format(session_file))
+    logger.info("Opened {:} session file"
+                .format(session_file))
     if updatetweets:
-        print("Updating old tweets")
+        logger.info("Updating old tweets")
         Session.status_prior()
         Session.rehydrate_tweets()
         Session.status_posterior()
     if terms:
-        logging.info("Retrieving new tweets")
+        logger.info("Retrieving new tweets")
         Session.get_more_tweets(terms)
     if encode:
         if encode == "user_place":
@@ -85,10 +98,10 @@ with cd(wd):
         reportwriter.write_report_all("all_tweets_report.xlsx", fmt='excel')
         reportwriter.write_report_geo("geo_tweet_report.xlsx", fmt='excel')
         reportwriter.hashtag_table("hashtag_frequencies.json", min_freq=10)
-        print("There are {:} geotagged tweets".format(reportwriter.how_many_geotagged()))
-        print(reportwriter.country_counts())
-        print(reportwriter.state_counts())
+        logger.info("There are {:} geotagged tweets".format(reportwriter.how_many_geotagged()))
+        logger.info(reportwriter.country_counts())
+        logger.info(reportwriter.state_counts())
         unique_states = reportwriter.unique_states()
-        logging.info("There are {:} unique states".format(unique_states.__len__()))
+        logger.info("There are {:} unique states".format(unique_states.__len__()))
     if not noclean:
         Session.cleanup_session()

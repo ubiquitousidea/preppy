@@ -19,10 +19,19 @@ DT_FORMATS = {
 }
 
 
+def get_logger(module_name):
+    path, filename = os.path.split(module_name)
+    basename, extension = os.path.splitext(filename)
+    return logging.getLogger("preppy.{}".format(basename))
+
+
+logger = get_logger(__file__)
+
+
 class CodeBook(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
-            logging.debug("Loading {:} into CodeBook".format(key))
+            logger.debug("Loading {:} into CodeBook".format(key))
             self.__setattr__(key, value)
 
     def explain_possible_values(self, variable_name):
@@ -183,7 +192,7 @@ def get_text_from_api(tweet, api):
     assert isinstance(tweet, Status)
     assert isinstance(api, Api)
     tweet = api.GetStatus(tweet.id)
-    logging.debug("Returning tweet \'full_text\' attribute")
+    logger.debug("Returning tweet \'full_text\' attribute")
     return tweet.full_text
 
 
@@ -203,16 +212,16 @@ def ask_param(param_name, tweet, api=None):
     if api is not None:
         assert isinstance(api, Api)
     if hasattr(tweet, "full_text") and tweet.full_text is not None:
-        logging.debug("Returning tweet \'full_text\' attribute")
+        logger.debug("Returning tweet \'full_text\' attribute")
         output = tweet.full_text
     elif hasattr(tweet, "text") and tweet.text is not None:
-        logging.debug("Returning tweet \'text\' attribute")
+        logger.debug("Returning tweet \'text\' attribute")
         output = tweet.text
     else:
-        logging.debug("Retrieving tweet from internet using Twitter API")
+        logger.debug("Retrieving tweet from internet using Twitter API")
         output = get_text_from_api(tweet, api)
 
-    print(output)
+    logger.info(output)
     try:
         hashtag_list = [tag['text'] for tag in tweet.hashtags]
     except:
@@ -222,9 +231,9 @@ def ask_param(param_name, tweet, api=None):
         place = tweet.place["full_name"]
     except:
         place = "Missing"
-    print("Place: {:}".format(place))
-    print("Hash Tags:", ",".join(hashtag_list))
-    print("What is the {:}? ".format(param_name.title()))
+    logger.info("Place: {:}".format(place))
+    logger.info("Hash Tags:", ",".join(hashtag_list))
+    logger.info("What is the {:}? ".format(param_name.title()))
     param = input()
     return str(param)
 
@@ -251,7 +260,7 @@ def backup_session(destination_dir, file_name):
         basename + uid + extension
     )
     shutil.copy(file_name, destination)
-    logging.debug("Copied {:} to backups folder".format(file_name))
+    logger.debug("Copied {:} to backups folder".format(file_name))
 
 
 def date_string(fmt=None):
@@ -285,7 +294,7 @@ def get_twitter_api(config_file):
                   **keys)
         return api
     except:
-        logging.warning("Unable to connect to Twitter API. "
+        logger.warning("Unable to connect to Twitter API. "
                         "Other functionality still available")
         return None
 
@@ -401,11 +410,11 @@ def rehydrate_tweets(id_list, api):
             get_status_url,
             verb="GET",
             data=data)
-        print("Made Twitter API call")
+        logger.info("Made Twitter API call")
         api_calls += 1
         for tweet_dict in response.json():
             tweet = Status.NewFromJsonDict(tweet_dict)
-            print("Updated {:}".format(tweet.id_str))
+            logger.info("Updated {:}".format(tweet.id_str))
             output.update({tweet.id_str: tweet})
-    print("Made {:} API calls".format(api_calls))
+    logger.info("Made {:} API calls".format(api_calls))
     return output

@@ -1,6 +1,9 @@
 import requests
 
-from preppy.misc import read_json, write_json, MISSING
+from preppy.misc import read_json, write_json, MISSING, get_logger
+
+
+logger = get_logger(__file__)
 
 
 class DataObject(object):

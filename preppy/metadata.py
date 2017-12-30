@@ -1,8 +1,9 @@
 from numpy import mean
-from preppy.misc import CodeBook, MISSING
+from preppy.misc import CodeBook, MISSING, get_logger
 
 
 CODE_BOOK = CodeBook.from_json('codebook.json')
+logger = get_logger(__file__)
 
 
 class MetaData(object):

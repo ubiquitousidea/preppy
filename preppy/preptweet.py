@@ -11,8 +11,11 @@ which uses primary keys "metadata" and "tweets".
 import os
 from numpy import array, zeros
 from twitter import Status
-from preppy.misc import read_json, ReverseLookup, MISSING
+from preppy.misc import read_json, ReverseLookup, MISSING, get_logger
 from preppy.metadata import MetaData
+
+
+logger = get_logger(__file__)
 
 
 # Clean this up. Should you really enforce that state_codes.json be in this dir?

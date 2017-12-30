@@ -9,16 +9,19 @@ the language because of the Tornado and Scikit-Learn packages.
 """
 
 from getpass import getuser
-import logging
 from preppy.dataobjects import PlaceInfo
 from preppy.misc import (
     get_twitter_api, write_json,
     backup_session, make_list, cull_old_files,
-    ask_param, MISSING, rehydrate_tweets
+    ask_param, MISSING, rehydrate_tweets,
+    get_logger
 )
 from preppy.metadata import CODE_BOOK
 from preppy.preptweet import PrepTweet
 from preppy.tweet_list import TweetList
+
+
+logger = get_logger(__file__)
 
 
 class Preppy(object):
@@ -59,14 +62,14 @@ class Preppy(object):
         :param _term: Optional. Term being searched
         :return: NoneType
         """
-        msg = "There are {:d} tweets.".format(self.tweets.n)
+        logger.info("There are {:d} tweets.".format(self.tweets.n))
         if _term is not None:
-            msg += "Retrieving more tweets related to {:}".format(_term)
-        print(msg)
+            logger.info("Retrieving more tweets related to {:}".format(_term))
+
 
     def status_posterior(self):
-        print("There are {:d} tweets now".format(self.tweets.n))
-        print("Of those, {:d} are geo-tagged".format(self.tweets.n_geotagged))
+        logger.info("There are {:d} tweets now".format(self.tweets.n))
+        logger.info("Of those, {:d} are geo-tagged".format(self.tweets.n_geotagged))
 
     def get_tweets(self, term):
         """
@@ -119,8 +122,8 @@ class Preppy(object):
                 query.update({"since_id": min_id})
             tweet_list = self.search_single_term(query)
             n_added = self.add_tweets(tweet_list)
-            print("Added {:d} tweets related to {:}"
-                  .format(n_added, term))
+            logger.info("Added {:d} tweets related to {:}"
+                        .format(n_added, term))
 
     def search_single_term(self, query):
         """
@@ -176,13 +179,13 @@ class Preppy(object):
                 continue
             coords = self.placeinfo.get_coordinates(place_name)
             if coords:
-                print("Place Name: {}, Coordinates {}".format(place_name, coords))
+                logger.info("Place Name: {}, Coordinates {}".format(place_name, coords))
                 tweet.metadata.record("user_place_coordinates", "google_geocoding", coords)
                 n += 1
             if n >= nmax:
                 break
-        print("Successfully encoded {} user place coordinates".format(n))
-        print("Did so by making {} api calls to Google".format(self.placeinfo.api_counter))
+        logger.info("Successfully encoded {} user place coordinates".format(n))
+        logger.info("Did so by making {} api calls to Google".format(self.placeinfo.api_counter))
         self.placeinfo.to_json("place_info.json")
 
     def rehydrate_tweets(self):
@@ -192,7 +195,7 @@ class Preppy(object):
         id_list = self.tweets.id_list
         tweets_dict = rehydrate_tweets(id_list, self.api)
         tweets_added = len(tweets_dict)
-        print("Rehydrated {:} tweets".format(tweets_added))
+        logger.info("Rehydrated {:} tweets".format(tweets_added))
         self.add_tweets(tweets_dict)
 
     def encode_variable(self,
@@ -254,7 +257,7 @@ class Preppy(object):
                 else:
                     msg = "Possible values: {:}"
                     value = CODE_BOOK.explain_possible_values(variable_name)
-                    print(msg.format(value))
+                    logger.info(msg.format(value))
             self.tweets.record_metadata(
                 id_str=tweet.id_str,
                 param=variable_name,

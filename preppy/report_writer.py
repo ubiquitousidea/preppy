@@ -4,7 +4,10 @@ from preppy import (
     TweetList, Preppy
 )
 from preppy.preptweet import PrepTweet
-from preppy.misc import write_json, enforce_extension
+from preppy.misc import write_json, enforce_extension, get_logger
+
+
+logger = get_logger(__file__)
 
 
 class ReportWriter(object):

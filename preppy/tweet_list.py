@@ -1,12 +1,11 @@
-import logging
 from twitter import Status
 from numpy.random import shuffle
 from preppy.preptweet import PrepTweet
 from preppy.metadata import MetaData, CODE_BOOK
-from preppy.misc import (
-    read_json,
-    write_json
-)
+from preppy.misc import read_json, write_json, get_logger
+
+
+logger = get_logger(__file__)
 
 
 class TweetList(object):
@@ -311,7 +310,7 @@ class TweetList(object):
             tweet = self.tweets[id_str]
             return tweet.metadata
         except KeyError:
-            logging.warning("Tweet id {} does not exist in the tweet list".format(id_str))
+            logger.warning("Tweet id {} does not exist in the tweet list".format(id_str))
             return MetaData()  # empty metadata
 
     def get_metadata_value(self, id_str, param, user_id=None):
@@ -363,7 +362,7 @@ class TweetList(object):
             try:
                 self.tweets[id_str].metadata = MetaData()
             except:
-                logging.warning("Did not clear metadata for tweet {}".format(id_str))
+                logger.warning("Did not clear metadata for tweet {}".format(id_str))
         else:
             try:
                 pt = self.tweets.get(id_str)
@@ -372,7 +371,7 @@ class TweetList(object):
                 assert isinstance(md, MetaData)
                 setattr(md, param, {})
             except:
-                logging.warning("Did not clear metadata for param {}, tweet {}".format(param, id_str))
+                logger.warning("Did not clear metadata for param {}, tweet {}".format(param, id_str))
 
     def record_metadata(self, id_str, param, user_id, value):
         """
@@ -412,6 +411,6 @@ class TweetList(object):
         n_tweets = self.n
         for var_name in CODE_BOOK.variable_names:
             n_coded = self.tweets_coded(var_name)
-            print("{:} out of {:} tweets have been coded for {:}"
+            logger.info("{:} out of {:} tweets have been coded for {:}"
                   .format(n_coded, n_tweets, var_name.title()))
 
