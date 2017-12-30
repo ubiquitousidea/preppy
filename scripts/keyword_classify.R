@@ -9,7 +9,7 @@
 # Relevance is determined by checking each tweet against a set of
 # user (programmer) defined keyword regexes
 #
-# This will eventually be replaced by /preppy/binary_classifier.py
+# This will eventually be replaced by /preppy/preppy/binaryclassifier.py
 # but it will work for now
 
 infile <- commandArgs(trailingOnly = TRUE)
