@@ -172,6 +172,18 @@ class PrepTweet(object):
             return self.MISSING
 
     @property
+    def words(self):
+        """
+        Return the words in the text of the tweet as a list
+        Text string will be split on whitespace.
+        :return: list of strings
+        """
+        try:
+            return self.text.split()
+        except:
+            return self.MISSING
+
+    @property
     def place(self):
         """
         Return the place where a mobile twitter user was when they tweeted.
