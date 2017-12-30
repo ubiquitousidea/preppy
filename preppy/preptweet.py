@@ -11,7 +11,7 @@ which uses primary keys "metadata" and "tweets".
 import os
 from numpy import array, zeros
 from twitter import Status
-from preppy.misc import read_json, ReverseLookup
+from preppy.misc import read_json, ReverseLookup, MISSING
 from preppy.metadata import MetaData
 
 
@@ -42,8 +42,6 @@ class PrepTweet(object):
             self.metadata = metadata
         elif isinstance(metadata, dict):
             self.metadata = MetaData.from_dict(metadata)
-
-        self.MISSING = self.metadata.MISSING
 
         for k, v in kwargs.items():
             # set attributes for whatever else you want using keyword args
@@ -111,7 +109,7 @@ class PrepTweet(object):
         try:
             return self.status.created_at
         except AttributeError:
-            return self.MISSING
+            return MISSING
 
     @property
     def user_id(self):
@@ -122,7 +120,7 @@ class PrepTweet(object):
         try:
             return self.status.user["id"]
         except:
-            return self.MISSING
+            return MISSING
 
     @property
     def user_id_str(self):
@@ -133,7 +131,7 @@ class PrepTweet(object):
         try:
             return str(self.status.user['id'])
         except:
-            return self.MISSING
+            return MISSING
 
     @property
     def hashtags(self):
@@ -144,7 +142,7 @@ class PrepTweet(object):
         try:
             return [tag["text"] for tag in self.status.hashtags]
         except:
-            return self.MISSING
+            return MISSING
 
     @property
     def hashtags_as_stringlist(self):
@@ -156,7 +154,7 @@ class PrepTweet(object):
         try:
             return ",".join(tags)
         except:
-            return self.MISSING
+            return MISSING
 
     @property
     def text(self):
@@ -172,9 +170,9 @@ class PrepTweet(object):
             elif self.status.text:
                 return self.text
             else:
-                return self.MISSING
+                return MISSING
         except:
-            return self.MISSING
+            return MISSING
 
     @property
     def words(self):
@@ -186,7 +184,7 @@ class PrepTweet(object):
         try:
             return self.text.split()
         except:
-            return self.MISSING
+            return MISSING
 
     @property
     def place(self):
@@ -198,7 +196,7 @@ class PrepTweet(object):
         try:
             return self.status.place["full_name"]
         except:
-            return self.MISSING
+            return MISSING
 
     @property
     def coordinates(self):
@@ -237,7 +235,7 @@ class PrepTweet(object):
         try:
             return self.coordinates[0]
         except:
-            return self.MISSING
+            return MISSING
 
     @property
     def longitude(self):
@@ -251,7 +249,7 @@ class PrepTweet(object):
         try:
             return self.coordinates[1]
         except:
-            return self.MISSING
+            return MISSING
 
     @property
     def country(self):
@@ -262,7 +260,7 @@ class PrepTweet(object):
         try:
             return self.status.place['country']
         except:
-            return self.MISSING
+            return MISSING
 
     @property
     def state(self):
@@ -270,16 +268,16 @@ class PrepTweet(object):
         Return the US state from which the tweet was sent.
         :return: str
         """
-        state_code = self.MISSING
+        state_code = MISSING
         try:
             country_code = self.status.place["country_code"]
         except TypeError:
-            return self.MISSING
+            return MISSING
         place_type = self.status.place["place_type"]
         if country_code == "US" and place_type == "city":
             full_name = self.status.place["full_name"]
             state_code = full_name.split(",")[-1].strip().upper()
-            state_code = state_code if state_code in valid_state_codes else self.MISSING
+            state_code = state_code if state_code in valid_state_codes else MISSING
         else:
             pass
         return state_code
@@ -292,7 +290,7 @@ class PrepTweet(object):
         try:
             return regions.lookup(self.state)
         except:
-            return self.MISSING
+            return MISSING
 
     @property
     def user_place(self):
@@ -304,7 +302,7 @@ class PrepTweet(object):
             place = self.status.user['location']
             return place
         except:
-            return self.MISSING
+            return MISSING
 
     @property
     def has_geotag(self):
