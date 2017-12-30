@@ -31,9 +31,8 @@ class ReportWriter(object):
     @property
     def geotagged(self):
         """
-        Returns a dictionary of tweets that
-        contain a 'place' attribute
-        :return: dict of twitter.Status objects
+        A list the geotagged tweets.
+        :return: list of PrepTweet objects
         """
         return self.tweets.as_list(only_geo=True)
 

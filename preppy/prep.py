@@ -26,7 +26,7 @@ class Preppy(object):
     def __init__(self, session_file_path,
                  backup_dir=None,
                  config_file=None,
-                 place_info=None):
+                 place_info="place_info.json"):
         """
         Return an instance of Preppy class
         :param str session_file_path: Name of a session file (optional)
@@ -42,7 +42,7 @@ class Preppy(object):
             self.tweets = TweetList()
         self.backups_dir = backup_dir
         self.api = get_twitter_api(config_file)
-        self.placeinfo = PlaceInfo.from_json(fname="place_info.json", config_file=config_file)
+        self.placeinfo = PlaceInfo.from_json(fname=place_info, config_file=config_file)
 
     @property
     def as_dict(self):
@@ -135,7 +135,7 @@ class Preppy(object):
         """
         i = 0
         max_iter = 180
-        tweet_list = TweetList()
+        tweet_list = TweetList()  # an empty TweetList
         while i < max_iter:
             n1 = len(tweet_list)
             i += 1
@@ -151,21 +151,21 @@ class Preppy(object):
                 break
         return tweet_list
 
-    def add_tweets(self, tweetlist):
+    def add_tweets(self, tweets):
         """
         Add tweets from a list or dict
-        :param tweetlist: list or dict of twitter.Status instances
+        :param tweets: list, dict, or TweetList; see TweetList.add_tweets
         :return: integer; Change in size of the tweet list
         """
         len1 = len(self.tweets)
-        self.tweets.add_tweets(tweetlist)
+        self.tweets.add_tweets(tweets)
         len2 = len(self.tweets)
         return len2 - len1
 
     def encode_user_location(self, nmax=None):
         """
         For each tweet that has user location attribute, encode location
-        coordiantes for that tweet using the PlaceInfo class (which uses
+        coordinates for that tweet using the PlaceInfo class (which uses
         the Google Geocoding API)
         :return: NoneType
         """
@@ -185,7 +185,6 @@ class Preppy(object):
         print("Successfully encoded {} user place coordinates".format(n))
         print("Did so by making {} api calls to Google".format(self.placeinfo.api_counter))
         self.placeinfo.to_json("place_info.json")
-
 
     def rehydrate_tweets(self):
         """

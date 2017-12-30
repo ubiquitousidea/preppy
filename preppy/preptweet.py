@@ -26,15 +26,24 @@ class PrepTweet(object):
         """
         A class to wrap twitter.Status objects up with
         customizable metadata objects
-        :param status: dict returned by twitter.Status.AsDict()
-        :param metadata: dict returned by preppy.MetaData.as_dict()
+        :param status: Status or dict returned by Status.AsDict()
+        :param metadata: MetaData or dict returned by MetaData.as_dict
         """
+
         if isinstance(status, Status):
             self.status = status
         elif isinstance(status, dict):
             self.status = Status(**status)
-        self.metadata = MetaData.from_dict(metadata)
+
+        if metadata is None:
+            self.metadata = MetaData()
+        elif isinstance(metadata, MetaData):
+            self.metadata = metadata
+        elif isinstance(metadata, dict):
+            self.metadata = MetaData.from_dict(metadata)
+
         self.MISSING = self.metadata.MISSING
+
         for k, v in kwargs.items():
             # set attributes for whatever else you want using keyword args
             setattr(self, k.lower(), v)

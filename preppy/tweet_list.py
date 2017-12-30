@@ -1,5 +1,5 @@
 import logging
-
+from twitter import Status
 from numpy.random import shuffle
 from preppy.preptweet import PrepTweet
 from preppy.metadata import MetaData, CODE_BOOK
@@ -174,12 +174,11 @@ class TweetList(object):
                       in self.tweets.values()
                       if tweet.has_geotag]
         else:
-            output = [tweet
-                      for tweet
-                      in self.tweets.values()]
-        output.sort(key=lambda _tweet: _tweet.id)
+            output = list(self.tweets.values())
         if randomize:
             shuffle(output)
+        else:
+            output.sort(key=lambda _tweet: _tweet.id)
         return output
 
     @property
@@ -188,6 +187,9 @@ class TweetList(object):
 
     @property
     def n_geotagged(self):
+        """
+        The number of tweets that are geotagged
+        """
         return len(self.geotagged())
 
     def geotagged(self, tweet_format="Status"):
@@ -212,6 +214,11 @@ class TweetList(object):
         return geo_tweets
 
     def export_geotagged_tweets(self, path=None):
+        """
+        Write the geotagged tweets to a JSON file.
+        :param path: path to the file. If None, default will be used.
+        :return: NoneType
+        """
         if path is None:
             path = "geotagged_tweets.json"
         d = self.geotagged(tweet_format="dict")
@@ -219,6 +226,11 @@ class TweetList(object):
 
     @property
     def max_id(self):
+        """
+        The largest Tweet ID present in this collection of tweets
+        This corresponds to the newest tweet.
+        :return: int
+        """
         ids = [int(i) for i in self.id_list]
         if ids:
             max_id = max(ids)
@@ -228,6 +240,11 @@ class TweetList(object):
 
     @property
     def min_id(self):
+        """
+        The smallest Tweet ID present in this collection of tweets
+        This correspond to the oldest tweet.
+        :return: int
+        """
         ids = [int(i) for i in self.id_list]
         if ids:
             min_id = min(ids)
@@ -237,24 +254,36 @@ class TweetList(object):
 
     def add_tweets(self, tweets):
         """
-        Add a list of tweets to the tweet list
-        :param tweets: list or dict of tweets
-            If dict, key is id string (id_str attribute)
-        :return: List of ID strings that were added
+        Add tweets to this TweetList
+        This method tries to be very accommodating with the
+        types of arguments that it can handle.
+        :param tweets: list, dict or TweetList object
+            Contents of this object should be Status, PrepTweet, or dict objects.
+        :return: NoneType
         """
-        if isinstance(tweets, (list, tuple)):
-            tweet_dict = {status.id_str: PrepTweet(status)
-                          for status in tweets}
-        elif isinstance(tweets, dict):
-            tweet_dict = tweets
-        elif isinstance(tweets, TweetList):
-            tweet_dict = tweets.tweets
-        else:
-            raise TypeError(
-                'Cannot add tweet from {:}'
-                .format(type(tweets))
-            )
 
+        def accommodate_format(_tweet):
+            """
+            local function to ensure that the argument passed
+            in is returned as a PrepTweet object
+            :param _tweet: dict, Status, or PrepTweet
+            :return: PrepTweet
+            """
+            if isinstance(_tweet, (Status, dict)):
+                return PrepTweet(_tweet)
+            elif isinstance(_tweet, PrepTweet):
+                return _tweet
+
+        if isinstance(tweets, TweetList):
+            tweet_dict = tweets.tweets
+        elif isinstance(tweets, (list, tuple)):
+            tweet_dict = {tweet.id_str: accommodate_format(tweet)
+                          for tweet in tweets}
+        elif isinstance(tweets, dict):
+            tweet_dict = {tweet.id_str: accommodate_format(tweet)
+                          for id_str, tweet in tweets.items()}
+        else:
+            raise TypeError("Unable to add tweets from {}".format(type(tweets)))
         self.tweets.update(tweet_dict)
 
     def user_has_encoded(self, user_id, variable_name, id_str):
@@ -267,20 +296,23 @@ class TweetList(object):
         :return: BoolType
         """
         try:
-            metadata = self.get_metadata_obj(id_str)
-            assert isinstance(metadata, MetaData)
-            var = getattr(metadata, variable_name)
-            value = var.get(user_id)
-            return True
+            value = self.get_metadata_value(id_str, variable_name, user_id)
+            return value is not None
         except AttributeError:
             return False
 
     def get_metadata_obj(self, id_str):
+        """
+        Return the metadata object a given tweet
+        :param id_str: the ID string of that tweet
+        :return:
+        """
         try:
             tweet = self.tweets[id_str]
             return tweet.metadata
-        except:
-            return None
+        except KeyError:
+            logging.warning("Tweet id {} does not exist in the tweet list".format(id_str))
+            return MetaData()  # empty metadata
 
     def get_metadata_value(self, id_str, param, user_id=None):
         """
@@ -299,8 +331,8 @@ class TweetList(object):
         except KeyError:
             return output
         try:
-            user_dict = tweet_metadata[param]
-        except KeyError:
+            user_dict = getattr(tweet_metadata, param)
+        except AttributeError:
             return output
         if user_id is None:
             output = [
@@ -332,7 +364,6 @@ class TweetList(object):
                 self.tweets[id_str].metadata = MetaData()
             except:
                 logging.warning("Did not clear metadata for tweet {}".format(id_str))
-                pass
         else:
             try:
                 pt = self.tweets.get(id_str)
@@ -342,38 +373,18 @@ class TweetList(object):
                 setattr(md, param, {})
             except:
                 logging.warning("Did not clear metadata for param {}, tweet {}".format(param, id_str))
-                pass
 
     def record_metadata(self, id_str, param, user_id, value):
         """
         Record a piece of metadata associated with a tweet
-        Metadata dictionary is of the form:
-        {
-            $tweet_id_string$: {
-                $param_name$: {
-                    $user_id$: $param_value$
-                }
-            }
-        }
         :param id_str: the id of the tweet
         :param param: the name of the variable to record
         :param user_id: the id of the user who encoded this variable
         :param value: the value of the variable to record
         """
-        assert id_str in self.tweets
-        pt = self.tweets.get(id_str)
-        assert isinstance(pt, PrepTweet)
-        pt.metadata.record(param, user_id, value)
-
-    def predict_metadata(self, id_str, var_name):
-        """
-        Predict the value for a given variable
-        Using KNN classification
-        :param id_str: the id string of the tweet
-        :param var_name: the name of the variable to be predicted
-        :return: The predicted value for that variable
-        """
-        pass
+        tweet = self.tweets.get(id_str)
+        if tweet is not None:
+            tweet.metadata.record(param, user_id, value)
 
     def tweets_coded(self, variable_name):
         """
