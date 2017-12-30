@@ -3,8 +3,8 @@
 Currently a standalone utility, to be worked into preppy. 
 
 Inputs: a preppy json file of tweets coded as relevant.
-Outputs: same json file, with additional subdict within a tweet called 'nlu' containing
-    Watsons NLU output for the tweet. 
+Outputs: appends subdict within a tweet dict called 'nlu',
+         contains Watsons NLU output for the tweet. 
 """
 
 import watson_developer_cloud
@@ -20,8 +20,7 @@ infile = args.infile
 config_file = args.config_file
 
 def get_waston_nlu(config_file):
-    """Instantiates watson NLU api object with keys from config.json
-    """
+    """Instantiates watson NLU api object with keys from config.json"""
     try:
         with open(config_file, "r") as f:
             config = json.load(f)
@@ -39,6 +38,7 @@ def get_waston_nlu(config_file):
         quit()
 
 def nlu_analyze(txt):
+    """Makes call to Watson NLU API"""
     result = nlu.analyze(
         text=txt,
         features = [features.Concepts(), features.Keywords(), features.Emotion(), features.Sentiment()]
@@ -46,7 +46,6 @@ def nlu_analyze(txt):
     return result 
 
 def main():
-
     with open(infile) as f:
         tweets = json.load(f)
 
