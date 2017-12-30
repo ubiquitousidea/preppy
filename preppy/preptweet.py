@@ -11,10 +11,11 @@ which uses primary keys "metadata" and "tweets".
 import os
 from numpy import array, zeros
 from twitter import Status
-from preppy.misc import read_json
-from preppy.metadata import MetaData, CODE_BOOK, ReverseLookup
+from preppy.misc import read_json, ReverseLookup
+from preppy.metadata import MetaData
 
 
+# Clean this up. Should you really enforce that state_codes.json be in this dir?
 dir_name = os.path.dirname(__file__)
 d = read_json("{:}/state_codes.json".format(dir_name))
 valid_state_codes = d["valid_state_codes"]
@@ -69,8 +70,13 @@ class PrepTweet(object):
         assert "metadata" in d
         return cls(**d)
 
-    def has_coded(self, vname):
-        return self.metadata.has_coded(vname)
+    def has_been_coded_for(self, vname):
+        """
+        Has this tweet been coded for XYZ?
+        :param vname: name of the variable
+        :return: BoolType
+        """
+        return self.metadata.has_been_coded_for(vname)
 
     @property
     def is_relevant(self):
@@ -95,7 +101,6 @@ class PrepTweet(object):
         :return: int
         """
         return self.status.id
-
 
     @property
     def date(self):
@@ -282,10 +287,8 @@ class PrepTweet(object):
     @property
     def region(self):
         """
-            Get the region of the US a tweet originated from
-            :param tweet: twitter.Status object
-            :return:
-            """
+        Get the region of the US a tweet originated from
+        """
         try:
             return regions.lookup(self.state)
         except:

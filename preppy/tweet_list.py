@@ -398,7 +398,7 @@ class TweetList(object):
                              .format(variable_name))
         n = 0
         for preptweet in self.tweets.values():
-            if preptweet.has_coded(variable_name):
+            if preptweet.has_been_coded_for(variable_name):
                 n += 1
         return n
 

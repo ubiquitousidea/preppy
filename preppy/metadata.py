@@ -1,14 +1,11 @@
 from numpy import mean
-from preppy.misc import CodeBook, ReverseLookup
+from preppy.misc import CodeBook, MISSING
 
 
 CODE_BOOK = CodeBook.from_json('codebook.json')
 
 
 class MetaData(object):
-
-    MISSING = None
-
     def __init__(self, **kwargs):
         """
         An object to represent the metadata we encode about a particular tweet
@@ -38,7 +35,7 @@ class MetaData(object):
             }
         )
 
-    def has_coded(self, param):
+    def has_been_coded_for(self, param):
         """
         Say whether or not a given variable has been coded by at least one person
         :param param: variable name that may have been coded
@@ -62,7 +59,7 @@ class MetaData(object):
                  in values]
             )
         else:
-            return self.MISSING
+            return MISSING
 
     @property
     def as_dict(self):
