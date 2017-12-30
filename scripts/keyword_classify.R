@@ -112,7 +112,7 @@ main <- function(keywords, infile) {
   prep$keep <- apply(prep[15:ncol(prep)], 1, any)
   keep_frame <- prep[prep$keep, ]
   toss_frame <- prep[!prep$keep, ]
-  geotagged <- keep_frame[keep_frame$latituded != 0]
+  geotagged <- keep_frame[keep_frame$latitude != 0]
   
   print(paste("Out of", nrow(prep), "tweets:", 
               nrow(keep_frame), "kept,", 
