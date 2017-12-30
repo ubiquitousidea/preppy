@@ -9,21 +9,43 @@ Outputs: same json file, with additional subdict within a tweet called 'nlu' con
 
 import watson_developer_cloud
 import watson_developer_cloud.natural_language_understanding.features.v1 as features
-from creds import creds
+import argparse
 import json
+import time
 
-with open("relevant_tweets.json") as f:
-    tweets = json.load(f)
 
-nlu = watson_developer_cloud.NaturalLanguageUnderstandingV1(
-    username=creds['username'],
-    password=creds['password'],
-    version="2017-02-27")
+parser = argparse.ArgumentParser()
+parser.add_argument("infile")
+args = parser.parse_args()
+infile = args.infile
+config_file = args.config_file
 
-def nlp(txt):
+def get_waston_nlu(config_file):
+    """Instantiates watson NLU api object with keys from config.json
+    """
+    try:
+        with open(config_file, "r") as f:
+            config = json.load(f)
+        watson_info = config.get("watson")
+        username = watson_info.get('username')
+        password = watson_info.get('password')
+        version = watson_info.get('version')
+        nlu = watson_developer_cloud.NaturalLanguageUnderstandingV1(
+            username=username,
+            password=password
+            version=version)
+        return nlu
+    except:
+        print("Unable to connect to Watson API\nCheck config.json")
+        quit()
+
+def nlu_analyze(txt):
     result = nlu.analyze(text=txt,
         features = [features.Concepts(), features.Keywords(), features.Emotion(), features.Sentiment()])
-    return result
+    return result 
+
+with open(infile) as f:
+    tweets = json.load(f)
 
 for k in tweets.keys():
     try:
@@ -39,6 +61,6 @@ for k in tweets.keys():
         tweets[k]['nlu'] = None
         pass
 
-
-with open("test_watson.json", "w") as f:
+outfile = "watson_results_" + time.strftime("%Y-%m-%d_%H.%M.%S") + ".json"
+with open("outfile", "w") as f:
     f = json.dumps(tweets, f, indent=4)
