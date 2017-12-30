@@ -13,7 +13,6 @@ import argparse
 import json
 import time
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("infile")
 args = parser.parse_args()
