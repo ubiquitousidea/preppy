@@ -116,6 +116,31 @@ class ReverseLookup(object):
         return self._lookup[value]
 
 
+def warn_of_error(action):
+    """
+    Decorator for PrepTweet properties
+    """
+    def husk(*args, **kwargs):
+        try:
+            return action(*args, **kwargs)
+        except Exception as e:
+            logger.warning(e)
+            return MISSING
+    return husk
+
+
+def silence_errors_return_nothing(action):
+    """
+    With a name like this, it has to be terrible. Avoid using this.
+    """
+    def husk(*args, **kwargs):
+        try:
+            return action(*args, **kwargs)
+        except:
+            pass
+    return husk
+
+
 @contextmanager
 def cd(new_directory=None):
     """

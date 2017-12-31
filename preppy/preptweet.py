@@ -11,7 +11,9 @@ which uses primary keys "metadata" and "tweets".
 import os
 from numpy import array, zeros
 from twitter import Status
-from preppy.misc import read_json, ReverseLookup, MISSING, get_logger
+from preppy.misc import (
+    read_json, ReverseLookup, MISSING,
+    get_logger, warn_of_error, silence_errors_return_nothing)
 from preppy.metadata import MetaData
 
 
@@ -80,6 +82,7 @@ class PrepTweet(object):
         return self.metadata.has_been_coded_for(vname)
 
     @property
+    @silence_errors_return_nothing
     def is_relevant(self):
         """
         Determine, by some means, if if the tweet is relevant to the search terms
@@ -88,6 +91,7 @@ class PrepTweet(object):
         return self.metadata.is_relevant
 
     @property
+    @silence_errors_return_nothing
     def id_str(self):
         """
         Return the unique ID string of the Tweet
@@ -96,6 +100,7 @@ class PrepTweet(object):
         return self.status.id_str
 
     @property
+    @silence_errors_return_nothing
     def id(self):
         """
         Return the unique ID (integer) of the Tweet
@@ -104,62 +109,53 @@ class PrepTweet(object):
         return self.status.id
 
     @property
+    @silence_errors_return_nothing
     def date(self):
         """
         Return the date that the tweet was created
         :return: str (see DATETIME_FORMATS["TWITTER"])
         """
-        try:
-            return self.status.created_at
-        except AttributeError:
-            return MISSING
+        return self.status.created_at
 
     @property
+    @silence_errors_return_nothing
     def user_id(self):
         """
         Get the unique ID number of the user who tweeted this tweet
         :return: int
         """
-        try:
-            return self.status.user["id"]
-        except:
-            return MISSING
+        return self.status.user["id"]
 
     @property
+    @silence_errors_return_nothing
     def user_id_str(self):
         """
         Get the unique ID number (as a string) of the user who tweeted
         :return:
         """
-        try:
-            return str(self.status.user['id'])
-        except:
-            return MISSING
+        return str(self.status.user['id'])
 
     @property
+    @silence_errors_return_nothing
     def hashtags(self):
         """
         Return a list of hashtags used in the text of the tweet
         :return: list
         """
-        try:
-            return [tag["text"] for tag in self.status.hashtags]
-        except:
-            return MISSING
+        return [tag["text"] for tag in self.status.hashtags]
 
     @property
+    @silence_errors_return_nothing
     def hashtags_as_stringlist(self):
         """
         Return a formatted text string with all the hashtags separated by commas
         :return: str
         """
         tags = self.hashtags
-        try:
-            return ",".join(tags)
-        except:
-            return MISSING
+        return ",".join(tags)
 
     @property
+    @silence_errors_return_nothing
     def text(self):
         """
         Return the text of the tweet
@@ -167,39 +163,33 @@ class PrepTweet(object):
             if that is the only thing available.
         :return: str (may contain nuts, unicode emoticons)
         """
-        try:
-            if self.status.full_text:
-                return self.status.full_text
-            elif self.status.text:
-                return self.text
-            else:
-                return MISSING
-        except:
+
+        if self.status.full_text:
+            return self.status.full_text
+        elif self.status.text:
+            return self.text
+        else:
             return MISSING
 
     @property
+    @silence_errors_return_nothing
     def words(self):
         """
         Return the words in the text of the tweet as a list
         Text string will be split on whitespace.
         :return: list of strings
         """
-        try:
-            return self.text.split()
-        except:
-            return MISSING
+        return self.text.split()
 
     @property
+    @silence_errors_return_nothing
     def place(self):
         """
         Return the place where a mobile twitter user was when they tweeted.
             (If available)
         :return: str
         """
-        try:
-            return self.status.place["full_name"]
-        except:
-            return MISSING
+        return self.status.place["full_name"]
 
     @property
     def coordinates(self):
@@ -223,10 +213,11 @@ class PrepTweet(object):
             ).squeeze()
             centroid = bounding_box.mean(axis=0)
             return centroid
-        except:
+        except AttributeError:
             return zeros(2)
 
     @property
+    @silence_errors_return_nothing
     def latitude(self):
         """
         Get the latitude from the coordinates attribute of the Status object
@@ -235,12 +226,10 @@ class PrepTweet(object):
         on their mobile device.
         :return: float; latitude
         """
-        try:
-            return self.coordinates[0]
-        except:
-            return MISSING
+        return self.coordinates[0]
 
     @property
+    @silence_errors_return_nothing
     def longitude(self):
         """
         Get the longitude from the coordinates attribute of the Status object
@@ -249,21 +238,16 @@ class PrepTweet(object):
         on their mobile device.
         :return: float; longitude
         """
-        try:
-            return self.coordinates[1]
-        except:
-            return MISSING
+        return self.coordinates[1]
 
     @property
+    @silence_errors_return_nothing
     def country(self):
         """
         Return the country from which the tweet originates
         :return: str
         """
-        try:
-            return self.status.place['country']
-        except:
-            return MISSING
+        return self.status.place['country']
 
     @property
     def state(self):
@@ -286,28 +270,25 @@ class PrepTweet(object):
         return state_code
 
     @property
+    @silence_errors_return_nothing
     def region(self):
         """
         Get the region of the US a tweet originated from
         """
-        try:
-            return regions.lookup(self.state)
-        except:
-            return MISSING
+        return regions.lookup(self.state)
 
     @property
+    @silence_errors_return_nothing
     def user_place(self):
         """
         Get the place that the user identifies as location in their profile.
         :return: str
         """
-        try:
-            place = self.status.user['location']
-            return place
-        except:
-            return MISSING
+        place = self.status.user['location']
+        return place
 
     @property
+    @silence_errors_return_nothing
     def has_geotag(self):
         """
         Say whether or not this tweet has been geotagged and can be located on a map
