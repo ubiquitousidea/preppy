@@ -112,7 +112,7 @@ main <- function(keywords, infile) {
   prep$keep <- apply(prep[15:ncol(prep)], 1, any)
   keep_frame <- prep[prep$keep, ]
   toss_frame <- prep[!prep$keep, ]
-  geotagged <- keep_frame[keep_frame$latitude != 0]
+  geotagged <- keep_frame[keep_frame$latitude != 0, ]
   
   print(paste("Out of", nrow(prep), "tweets:", 
               nrow(keep_frame), "kept,", 
@@ -120,9 +120,9 @@ main <- function(keywords, infile) {
   print(paste(nrow(geotagged), "geotagged relevant tweets"))
   
   outtime <- format(Sys.time(), "%Y-%m-%d_%H.%M.%S")
-  write.csv(keep_frame, paste0("kept_tweets_", outtime), row.names = FALSE)
-  write.csv(toss_frame, paste0("tossed_tweets_", outtime), row.names = FALSE)
-  write.csv(geotagged, paste0("relevant_geotagged_", outtime), row.names = FALSE)
+  write.csv(keep_frame, paste0("kept_tweets_", outtime, ".csv"), row.names = FALSE)
+  write.csv(toss_frame, paste0("tossed_tweets_", outtime, ".csv"), row.names = FALSE)
+  write.csv(geotagged, paste0("relevant_geotagged_", outtime, ".csv"), row.names = FALSE)
 }
 
 main(keywords, infile)
