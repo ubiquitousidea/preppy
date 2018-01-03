@@ -1,5 +1,6 @@
 # A simple keyword and regex based tweet classifier
-# 
+# Answers the question: "is this tweet really relevant to this study or not?"
+#
 # Input -- a csv of tweets
 # Output -- 3 csvs of tweets:
 #    relevant
