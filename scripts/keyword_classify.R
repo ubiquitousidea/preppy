@@ -95,12 +95,7 @@ keywords = list(
     case_insens = TRUE)
 )
 
-main <- function(keywords, infile) {
-  prep <- read.csv(infile)
-  
-  # need another workaround: keep utf for watson
-  prep$text <- stringi::stri_enc_toascii(prep$text)
-  
+keyword_search <- function(keywords, prep) {
   for (i in seq_along(keywords)) {
     word <- names(keywords)[i]
     wordpat <- keywords[[i]]$pat
@@ -108,8 +103,15 @@ main <- function(keywords, infile) {
     result <- grepl(wordpat, prep$text, ignore.case = case_insens)
     prep[[word]] <- result
   }
-  
+  return(prep)
+}
+
+main <- function(keywords, infile) {
+  prep <- read.csv(infile)
+  prep$text <- stringi::stri_enc_toascii(prep$text)
+  prep <- keyword_search(keywords, prep)
   prep$keep <- apply(prep[15:ncol(prep)], 1, any)
+  
   keep_frame <- prep[prep$keep, ]
   toss_frame <- prep[!prep$keep, ]
   geotagged <- keep_frame[keep_frame$latitude != 0, ]
@@ -126,4 +128,3 @@ main <- function(keywords, infile) {
 }
 
 main(keywords, infile)
-
