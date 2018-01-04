@@ -121,9 +121,9 @@ main <- function(keywords, tweet_report) {
   print(paste(nrow(geotagged), "geotagged relevant tweets"))
   
   outtime <- format(Sys.time(), "%Y-%m-%d_%H.%M.%S")
-  write.csv(keep_frame, paste0("kept_tweets_", outtime, ".csv"), row.names = FALSE)
-  write.csv(toss_frame, paste0("tossed_tweets_", outtime, ".csv"), row.names = FALSE)
-  write.csv(geotagged, paste0("relevant_geotagged_", outtime, ".csv"), row.names = FALSE)
+  write.csv(keep_frame, paste0("kept_tweets_", outtime, ".csv"), fileEncoding = "ASCII", row.names = FALSE)
+  write.csv(toss_frame, paste0("tossed_tweets_", outtime, ".csv"), fileEncoding = "ASCII", row.names = FALSE)
+  write.csv(geotagged, paste0("relevant_geotagged_", outtime, ".csv"), fileEncoding = "ASCII", row.names = FALSE)
 }
 
 tweet_report <- commandArgs(trailingOnly = TRUE)
