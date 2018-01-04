@@ -53,6 +53,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-tweetfile", "--tweetfile", required = True)
     parser.add_argument("-config", "--config", required = True)
+    parser.add_argument("-relevant", "--relevant")
     return parser.parse_args()
 
 def main():
@@ -60,6 +61,7 @@ def main():
     args = parse_args()
     tweetfile = args.tweetfile 
     config_file = args.config
+    relevant_tweets = args.relevant
 
     with open(tweetfile) as f:
         tweets = json.load(f)
