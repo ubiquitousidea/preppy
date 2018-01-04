@@ -13,8 +13,6 @@
 # This will eventually be replaced by /preppy/preppy/binaryclassifier.py
 # but it will work for now: FPR and FNR hover around 1% and 3%, respectively
 
-infile <- commandArgs(trailingOnly = TRUE)
-
 keywords = list(
   PrEP = list(
     pat = "PrEP",
@@ -107,8 +105,8 @@ keyword_search <- function(keywords, prep) {
   return(prep)
 }
 
-main <- function(keywords, infile) {
-  prep <- read.csv(infile)
+main <- function(keywords, tweet_report) {
+  prep <- read.csv(tweet_report, colClasses = c("id_string" = "character"))
   prep$text <- stringi::stri_enc_toascii(prep$text)
   prep <- keyword_search(keywords, prep)
   prep$keep <- apply(prep[15:ncol(prep)], 1, any)
@@ -128,4 +126,6 @@ main <- function(keywords, infile) {
   write.csv(geotagged, paste0("relevant_geotagged_", outtime, ".csv"), row.names = FALSE)
 }
 
-main(keywords, infile)
+tweet_report <- commandArgs(trailingOnly = TRUE)
+
+main(keywords, tweet_report)
