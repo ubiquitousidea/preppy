@@ -84,6 +84,7 @@ def main():
         tweets = json.load(f)
         watson = Watson(config_file)
         for k in tweets.keys():
+            
             try:
                 tweet_text = tweets[k]['full_text']
                 print("Analyzing tweet %s" % k)
@@ -91,11 +92,12 @@ def main():
             except watson_developer_cloud.watson_developer_cloud_service.WatsonException:
                 print("WatsonExcepption on %s" % k)
                 tweets[k]['nlu'] = None
-                pass
             except KeyError: 
                 print("KeyError on tweet %s" % k)
                 tweets[k]['nlu'] = None
-                pass
+            except:
+                print("Unknown error on tweet %s" % k)
+                break
 
     outfile = "watson_results_" + time.strftime("%Y-%m-%d_%H.%M.%S") + ".json"
     with open(outfile, "w+") as f:
