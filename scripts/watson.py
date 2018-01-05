@@ -51,28 +51,31 @@ class Watson():
         return result 
 
 def read_ids(id_file): 
-    """Get IDs of tweets classified as relevant by keyword_classify.R"""
+    """Get IDs of tweets classified as relevant by keyword_classify.R
+    
+    Assumes a .csv file with one column and one column header
+    """
     with open(id_file) as f:
         ids = f.read().replace('"', '').splitlines()
     return ids[1::]
 
 def parse_args(): 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-tweetfile", "--tweetfile", required = True)
+    parser.add_argument("-session", "--session", required = True)
     parser.add_argument("-config", "--config", required = True)
     parser.add_argument("-idfile", "--idfile", required = True)
     return parser.parse_args()
 
 def main():
-    """Procedural code remains here until it finds a home in preppy application logic"""
+    """Procedural code remains here until integrated into preppy application logic"""
     args = parse_args()
-    tweetfile = args.tweetfile 
+    session = args.session
     config_file = args.config
     id_file = args.idfile
 
     relevant_ids = read_ids(id_file)
 
-    with open(tweetfile) as f:
+    with open(session) as f:
         tweets = json.load(f)
     
     watson = Watson(config_file)
@@ -91,9 +94,7 @@ def main():
             except:
                 print("Unknown error on tweet %s" % k)
                 break
-
-    outfile = "watson_results_" + time.strftime("%Y-%m-%d_%H.%M.%S") + ".json"
-    with open(outfile, "w+") as f:
+    with open(session, "w") as f:
        output = json.dumps(tweets, indent=4)
        f.write(output)
 
