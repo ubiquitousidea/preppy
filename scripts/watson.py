@@ -50,22 +50,17 @@ class Watson():
             )
         return result 
 
-def get_ids(id_file): 
-    """A temporary fix until binary classifier is worked into preppy
-    Reads a csv of tweet IDs written as a row vector by R.
-    Returns a list of ids of tweets marked as relevant by keyword_classify.R
-    """
+def read_ids(id_file): 
+    """Get IDs of tweets classified as relevant by keyword_classify.R"""
     with open(id_file) as f:
-        reader = csv.reader(f)
-        ids = list(reader)
-        ids = ids[1] # [0] contains column names
-    return ids
+        ids = f.read().replace('"', '').splitlines()
+    return ids[1::]
 
 def parse_args(): 
     parser = argparse.ArgumentParser()
     parser.add_argument("-tweetfile", "--tweetfile", required = True)
     parser.add_argument("-config", "--config", required = True)
-    parser.add_argument("-idfile", "--idfile")
+    parser.add_argument("-idfile", "--idfile", required = True)
     return parser.parse_args()
 
 def main():
@@ -75,26 +70,27 @@ def main():
     config_file = args.config
     id_file = args.idfile
 
-    relevant_ids = get_ids(id_file)
+    relevant_ids = read_ids(id_file)
 
     with open(tweetfile) as f:
         tweets = json.load(f)
-        watson = Watson(config_file)
-        for k in tweets.keys():
-            if k in relevant_ids:
-                try:
-                    tweet_text = tweets[k]['status']['full_text']
-                    print("Analyzing tweet %s" % k)
-                    tweets[k]['nlu'] = watson.call_nlu(tweet_text)
-                except watson_developer_cloud.watson_developer_cloud_service.WatsonException:
-                    print("WatsonExcepption on %s" % k)
-                    tweets[k]['nlu'] = None
-                except KeyError: 
-                    print("KeyError on tweet %s" % k)
-                    tweets[k]['nlu'] = None
-                except:
-                    print("Unknown error on tweet %s" % k)
-                    break
+    
+    watson = Watson(config_file)
+    for k in tweets.keys():
+        if k in relevant_ids:
+            try:
+                tweet_text = tweets[k]['status']['full_text']
+                print("Analyzing tweet %s" % k)
+                tweets[k]['nlu'] = watson.call_nlu(tweet_text)
+            except watson_developer_cloud.watson_developer_cloud_service.WatsonException:
+                print("WatsonExcepption on %s" % k)
+                tweets[k]['nlu'] = None
+            except KeyError: 
+                print("KeyError on tweet %s" % k)
+                tweets[k]['nlu'] = None
+            except:
+                print("Unknown error on tweet %s" % k)
+                break
 
     outfile = "watson_results_" + time.strftime("%Y-%m-%d_%H.%M.%S") + ".json"
     with open(outfile, "w+") as f:
