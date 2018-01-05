@@ -1,6 +1,6 @@
 """A module for text analytics through IBM Watson
 
-Currently a standalone utility, to be worked into preppy. 
+A formerly standalone utility currently being worked into preppy 
 
 Inputs: a preppy json file of tweets coded as relevant.
 Outputs: appends subdict within a tweet dict called 'nlu',
@@ -10,9 +10,7 @@ Outputs: appends subdict within a tweet dict called 'nlu',
 import watson_developer_cloud
 import watson_developer_cloud.natural_language_understanding.features.v1 as features
 import argparse
-import json
-import time
-import csv
+from preppy.misc import (read_json, write_json)
 
 class Watson():
     """Handles communication with IBM Watson
@@ -75,8 +73,7 @@ def main():
 
     relevant_ids = read_ids(id_file)
 
-    with open(session) as f:
-        tweets = json.load(f)
+    tweets = read_json(session)
     
     watson = Watson(config_file)
     for k in tweets.keys():
@@ -94,9 +91,8 @@ def main():
             except:
                 print("Unknown error on tweet %s" % k)
                 break
-    with open(session, "w") as f:
-       output = json.dumps(tweets, indent=4)
-       f.write(output)
+
+    write_json(session)
 
 if __name__ == '__main__':
     main()
