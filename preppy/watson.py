@@ -16,7 +16,7 @@ class Watson():
     """Handles communication with IBM Watson
     
     Currently only talks to NLU API, 
-    Support for other watson APIs can be added should demand arise. 
+    Support for other watson APIs can be added.
     """
     
     def __init__(self, config_file):
@@ -30,7 +30,6 @@ class Watson():
             return creds
 
     def _get_nlu(self):
-        """Instantiates watson NLU api object using keys from config.json"""
         username = self.creds.get('username')
         password = self.creds.get('password')
         version = "2017-02-27"
@@ -41,18 +40,15 @@ class Watson():
         return nlu
 
     def call_nlu(self, tweet):
-        """Makes call to Watson NLU API"""
         result = self.nlu.analyze(
             text=tweet,
-            features = [features.Concepts(), features.Keywords(), features.Emotion(), features.Sentiment()]
-            )
+            features = [features.Concepts(), features.Keywords(), features.Emotion(), features.Sentiment()])
         return result 
 
 def read_ids(id_file): 
-    """Get IDs of tweets classified as relevant by keyword_classify.R
+    """Get IDs of tweets classified as relevant by keyword_classify.R 
+    Assumes a .csv file with one column and one column header"""
     
-    Assumes a .csv file with one column and one column header
-    """
     with open(id_file) as f:
         ids = f.read().replace('"', '').splitlines()
     return ids[1::]
@@ -65,7 +61,7 @@ def parse_args():
     return parser.parse_args()
 
 def main():
-    """Procedural code remains here until integrated into preppy application logic"""
+    """Procedural code remains here until integrated with preppy application logic"""
     args = parse_args()
     session = args.session
     config_file = args.config
