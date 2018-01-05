@@ -1,17 +1,22 @@
 # A simple keyword and regex based tweet classifier
 # Answers the question: "is this tweet really relevant to this study or not?"
-#
+# 
 # Input -- a csv of tweets
-# Output -- 3 csvs of tweets:
-#    relevant
-#    irrelevant
-#    relevant_geotagged
-#
+# Output -- either csvs of tweets or tweet IDs
+#           coded as either relevant as irrelevant 
+# 
 # Relevance is determined by checking each tweet against a set of
 # user (programmer) defined keyword regexes
+# FPR and FNR are 1% and 3%, respectively
 #
 # This will eventually be replaced by /preppy/preppy/binaryclassifier.py
-# but it will work for now: FPR and FNR hover around 1% and 3%, respectively
+# but it will work for now
+# 
+# Todo: set up CLI output opts:
+#    --ids <class> 
+#    --csv <class>
+#    default:
+#    --ids relevant
 
 keywords = list(
   PrEP = list(
@@ -120,10 +125,11 @@ main <- function(keywords, tweet_report) {
               nrow(toss_frame), "tossed"))
   print(paste(nrow(geotagged), "geotagged relevant tweets"))
   
-  outtime <- format(Sys.time(), "%Y-%m-%d_%H.%M.%S")
-  write.csv(keep_frame, paste0("kept_tweets_", outtime, ".csv"), row.names = FALSE)
-  write.csv(toss_frame, paste0("tossed_tweets_", outtime, ".csv"), row.names = FALSE)
-  write.csv(geotagged, paste0("relevant_geotagged_", outtime, ".csv"), row.names = FALSE)
+  outtime <- format(Sys.time(), "%Y-%m-%d_%H-%M")
+  #write.csv(keep_frame, paste0("kept_tweets_", outtime, ".csv"), row.names = FALSE)
+  #write.csv(toss_frame, paste0("tossed_tweets_", outtime, ".csv"), row.names = FALSE)
+  #write.csv(geotagged, paste0("relevant_geotagged_", outtime, ".csv"), row.names = FALSE)
+  write.csv(keep_frame$id_string, "relevant_ids.csv", row.names = FALSE)
 }
 
 tweet_report <- commandArgs(trailingOnly = TRUE)
