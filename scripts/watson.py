@@ -52,18 +52,13 @@ class Watson():
 
 def get_ids(id_file): 
     """A temporary fix until binary classifier is worked into preppy
-
+    Reads a csv of tweet IDs written as a row vector by R.
     Returns a list of ids of tweets marked as relevant by keyword_classify.R
-    
-    Reads a flat (one-row) csv of tweet ids
-    (Could not get Pandas to read keyword_classify output 
-    without converting the ids to an int, seemed to ignore dtype arg
-    so one row file is workaround.)
     """
     with open(id_file) as f:
         reader = csv.reader(f)
         ids = list(reader)
-        ids = ids[1]
+        ids = ids[1] # [0] contains column names
     return ids
 
 def parse_args(): 
