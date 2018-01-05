@@ -12,7 +12,7 @@
 # This will eventually be replaced by /preppy/preppy/binaryclassifier.py
 # but it will work for now
 # 
-# Todo: set up CLI output opts:
+# Todo: set up CLI opts for script output:
 #    --ids <class> 
 #    --csv <class>
 #    default:
