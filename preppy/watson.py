@@ -9,6 +9,8 @@ Outputs: appends subdict within a tweet dict called 'nlu',
 
 import watson_developer_cloud
 import watson_developer_cloud.natural_language_understanding.features.v1 as features
+from watson_developer_cloud.watson_developer_cloud_service import WatsonException
+
 import argparse
 from preppy.misc import (read_json, write_json)
 
@@ -48,7 +50,7 @@ class Watson():
 def read_ids(id_file): 
     """Get IDs of tweets classified as relevant by keyword_classify.R 
     Assumes a .csv file with one column and one column header"""
-    
+
     with open(id_file) as f:
         ids = f.read().replace('"', '').splitlines()
     return ids[1::]
@@ -63,23 +65,21 @@ def parse_args():
 def main():
     """Procedural code remains here until integrated with preppy application logic"""
     args = parse_args()
-    session = args.session
+    session_file = args.session
     config_file = args.config
     id_file = args.idfile
-
     relevant_ids = read_ids(id_file)
-
-    tweets = read_json(session)
-    
+    tweets = read_json(session_file)
     watson = Watson(config_file)
+    
     for k in tweets.keys():
         if k in relevant_ids:
             try:
                 tweet_text = tweets[k]['status']['full_text']
                 print("Analyzing tweet %s" % k)
                 tweets[k]['nlu'] = watson.call_nlu(tweet_text)
-            except watson_developer_cloud.watson_developer_cloud_service.WatsonException:
-                print("WatsonExcepption on %s" % k)
+            except WatsonException:
+                print("WatsonException on %s" % k)
                 tweets[k]['nlu'] = None
             except KeyError: 
                 print("KeyError on tweet %s" % k)
