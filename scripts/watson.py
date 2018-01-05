@@ -60,7 +60,7 @@ def get_ids(id_file):
     without converting the ids to an int, seemed to ignore dtype arg
     so one row file is workaround.)
     """
-    with open(idfile) as f:
+    with open(id_file) as f:
         reader = csv.reader(f)
         ids = list(reader)
         ids = ids[1]
@@ -70,7 +70,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-tweetfile", "--tweetfile", required = True)
     parser.add_argument("-config", "--config", required = True)
-    parser.add_argument("-relevant", "--relevant")
+    parser.add_argument("-idfile", "--idfile")
     return parser.parse_args()
 
 def main():
@@ -80,24 +80,26 @@ def main():
     config_file = args.config
     id_file = args.idfile
 
+    relevant_ids = get_ids(id_file)
+
     with open(tweetfile) as f:
         tweets = json.load(f)
         watson = Watson(config_file)
         for k in tweets.keys():
-            
-            try:
-                tweet_text = tweets[k]['full_text']
-                print("Analyzing tweet %s" % k)
-                tweets[k]['nlu'] = watson.call_nlu(tweet_text)
-            except watson_developer_cloud.watson_developer_cloud_service.WatsonException:
-                print("WatsonExcepption on %s" % k)
-                tweets[k]['nlu'] = None
-            except KeyError: 
-                print("KeyError on tweet %s" % k)
-                tweets[k]['nlu'] = None
-            except:
-                print("Unknown error on tweet %s" % k)
-                break
+            if k in relevant_ids:
+                try:
+                    tweet_text = tweets[k]['status']['full_text']
+                    print("Analyzing tweet %s" % k)
+                    tweets[k]['nlu'] = watson.call_nlu(tweet_text)
+                except watson_developer_cloud.watson_developer_cloud_service.WatsonException:
+                    print("WatsonExcepption on %s" % k)
+                    tweets[k]['nlu'] = None
+                except KeyError: 
+                    print("KeyError on tweet %s" % k)
+                    tweets[k]['nlu'] = None
+                except:
+                    print("Unknown error on tweet %s" % k)
+                    break
 
     outfile = "watson_results_" + time.strftime("%Y-%m-%d_%H.%M.%S") + ".json"
     with open(outfile, "w+") as f:
