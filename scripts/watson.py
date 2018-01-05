@@ -12,6 +12,7 @@ import watson_developer_cloud.natural_language_understanding.features.v1 as feat
 import argparse
 import json
 import time
+import csv
 
 class Watson():
     """Handles communication with IBM Watson
@@ -49,6 +50,22 @@ class Watson():
             )
         return result 
 
+def get_ids(id_file): 
+    """A temporary fix until binary classifier is worked into preppy
+
+    Returns a list of ids of tweets marked as relevant by keyword_classify.R
+    
+    Reads a flat (one-row) csv of tweet ids
+    (Could not get Pandas to read keyword_classify output 
+    without converting the ids to an int, seemed to ignore dtype arg
+    so one row file is workaround.)
+    """
+    with open(idfile) as f:
+        reader = csv.reader(f)
+        ids = list(reader)
+        ids = ids[1]
+    return ids
+
 def parse_args(): 
     parser = argparse.ArgumentParser()
     parser.add_argument("-tweetfile", "--tweetfile", required = True)
@@ -61,7 +78,7 @@ def main():
     args = parse_args()
     tweetfile = args.tweetfile 
     config_file = args.config
-    relevant_tweets = args.relevant
+    id_file = args.idfile
 
     with open(tweetfile) as f:
         tweets = json.load(f)
