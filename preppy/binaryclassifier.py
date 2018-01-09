@@ -50,3 +50,53 @@ Predict the relevance F(tweet) of the test set and measure the error rate.
 Iterate to find the set of words that minimizes cross validation error metric.
 
 """
+
+
+from preppy.preptweet import PrepTweet
+
+
+class TweetClassifier(object):
+    """
+    An object to classify things
+    """
+    def __init__(self, vname=None):
+        """
+        Multinomial classifier
+        :param vname: name of the variable that this model is concerned with
+        """
+        self.variable_name = "" if vname is None else vname
+        # words dict:
+        # primary key: value of the variable
+        # secondary key: a set of words observed in
+        #   conjunction with that variable value.
+        self.words = {}
+
+    def train(self, tweet, value):
+        """
+        :param tweet: PrepTweet object
+        :param value: value of the variable associated with this tweet
+        :return: NoneType
+        """
+        assert isinstance(value, bool)
+        assert isinstance(tweet, PrepTweet)
+        words = tweet.words
+        self.add_words(words, value)
+
+    def add_words(self, words, value):
+        """
+        Having observed words associated with value = (True/False)
+        :param words: list of character strings
+        :param value: True/False
+        :return: NoneType
+        """
+        value = str(value)  # make safe for json I/O
+        assert type(words) is list
+        assert all([type(word) is str for word in words])
+        if value not in self.words:
+            self.words[value] = set({})
+        wordset = self.words.get(value)
+        wordset.update(words)
+
+    def classify(self, tweet):
+        assert isinstance(tweet, PrepTweet)
+
