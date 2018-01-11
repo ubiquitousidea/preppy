@@ -1,4 +1,4 @@
-from preppy.misc import get_logger
+from preppy.misc import get_logger, write_json, read_json, enforce_extension
 from preppy.preptweet import PrepTweet
 from preppy.metadata import MetaData
 from sklearn.ensemble import RandomForestClassifier
@@ -79,6 +79,8 @@ class TweetClassifier(object):
         x = array(indicators, ndmin=2, dtype=int)
         y = array(responses, ndmin=2)
 
+        self.model.fit(x, y)
+
     def predict(self, tweet):
         """
         Wrapper for the discriminant function
@@ -146,7 +148,7 @@ class TweetClassifier(object):
         :return: NoneType
         """
         value = str(value)  # make safe for json I/O
-        assert self.assert_all_elements_are_strings(words)
+        self.assert_all_elements_are_strings(words)
         if value not in self.words:
             self.words[value] = set()
         self.words[value].update(words)
@@ -164,6 +166,25 @@ class TweetClassifier(object):
         :return: BoolType
         """
         return len(self.indicator_words) > 0
+
+    def to_json(self, fname):
+        """
+        Write out the contents of this model to a json file
+        :param fname: name of the json file to write
+        :return:
+        """
+        fname = enforce_extension(fname, ".json")
+        write_json(self.as_dict, fname)
+
+    @classmethod
+    def from_json(cls, fname):
+        """
+        Instantiate this class from a json file
+        :param fname: name of the json file written by self.to_json()
+        :return: an instance of this class
+        """
+        d = read_json(fname)
+        return cls.from_dict(d)
 
     @property
     def as_dict(self):
