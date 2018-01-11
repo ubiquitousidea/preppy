@@ -1,10 +1,14 @@
+from preppy.misc import get_logger
 from preppy.preptweet import PrepTweet
 from preppy.metadata import MetaData
 from sklearn.ensemble import RandomForestClassifier
 
 from numpy import (
-    zeros_like, vectorize
+    zeros_like, vectorize, array
 )
+
+
+logger = get_logger(__file__)
 
 
 class TweetClassifier(object):
@@ -48,21 +52,32 @@ class TweetClassifier(object):
         as predictors.
 
         :param tweets: arbitrary number of PrepTweet objects
-        :param variable_name: name of the variable to train on (may already be set by __init__)
+        :param variable_name: name of the variable to train on
+            overrides what is set by __init__
         :return: NoneType
         """
         if variable_name is not None:
+            self.warn_if_trained(self.variable_name, variable_name)
             self.variable_name = variable_name
 
-        response = []
+        responses = []
+        indicators = []
         for tweet in tweets:
             assert isinstance(tweet, PrepTweet)
             value = tweet.lookup(self.variable_name)
             words = tweet.words
             self.add_words(words=words, value=value)
-            response.append(value)
+            responses.append(value)
 
-        self.factor_select_initial()  # self.indicator_words is set by this function
+        # self.indicator_words is set by the following function
+        self.factor_select_initial()
+
+        for tweet in tweets:
+            ind = self.evaluate_indicators(tweet.words)
+            indicators.append(ind)
+
+        x = array(indicators, ndmin=2, dtype=int)
+        y = array(responses, ndmin=2)
 
     def predict(self, tweet):
         """
@@ -113,7 +128,6 @@ class TweetClassifier(object):
         indicators = set()
         factor_levels = self.words.keys()
         for level, words in self.words.items():
-
             other_levels = set(factor_levels) - {level}
             w1 = set(words)  # words associated with this factor level
             w2 = set()  # words associated with the other factor levels
@@ -121,11 +135,12 @@ class TweetClassifier(object):
                 w2.update(self.words.get(other_level))
             specific_words = w1 - w2
             indicators.update(specific_words)
-
+        self.indicator_words = list(indicators)
 
     def add_words(self, words, value):
         """
-        Having observed words associated with value = (True/False)
+        Having observed words associated with value = $$$
+        record the observed words
         :param words: list of character strings
         :param value: True/False
         :return: NoneType
@@ -134,8 +149,46 @@ class TweetClassifier(object):
         assert self.assert_all_elements_are_strings(words)
         if value not in self.words:
             self.words[value] = set()
-        wordset = self.words.get(value)
-        wordset.update(words)
+        self.words[value].update(words)
+
+    def warn_if_trained(self, v1, v2):
+        if self.is_trained:
+            if v1 != v2:
+                msg = "Changing response from {} to {}".format(v1, v2)
+                logger.warning(msg)
+
+    @property
+    def is_trained(self):
+        """
+        Say whether or not this model object has been trained
+        :return: BoolType
+        """
+        return len(self.indicator_words) > 0
+
+    @property
+    def as_dict(self):
+        """
+        Return a dictionary of this object
+        Make the word sets into lists
+        :return: dictionary
+        """
+        d = self.__dict__
+        # convert to list to be json safe
+        d['words'] = {value: list(words) for value, words in self.words.items()}
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Instantiate this class from a dict
+        But make the word lists into sets
+        :param d: dictionary produced by TweetClassifier().as_dict
+        :return: an instance of this class
+        """
+        obj = cls()
+        obj.__dict__.update(d)
+        obj.words = {value: set(words) for value, words in d['words'].items()}
+
 
 
 
