@@ -90,10 +90,19 @@ class PrepTweet(object):
 
     @property
     @silence_errors_return_nothing
+    def is_relevant(self):
+        """
+        Return the average of all user encoded relevance scores
+        :return:
+        """
+        return self.metadata.is_relevant
+
+    @property
+    @silence_errors_return_nothing
     def relevance(self):
         """
         Determine, by some means, if if the tweet is relevant to the search terms
-        :return:
+        :return: dictionary of relevance
         """
         return self.metadata.relevance
 
