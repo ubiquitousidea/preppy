@@ -48,7 +48,8 @@ class MetaData(object):
         :return: the average value for that variable
         """
         user_dict = getattr(self, param.lower())
-        return mean(user_dict.values())
+        numerical_values = [float(val) for val in user_dict.values()]
+        return mean(numerical_values)
 
     def has_been_coded_for(self, param):
         """

@@ -141,7 +141,7 @@ class TweetList(object):
         :return: list of PrepTweet instances
         """
         output = [tweet for tweet in self.tweets.values()
-                  if tweet.is_relevant == 1]
+                  if tweet.relevance == 1]
         output.sort(key=lambda _tweet: _tweet.id)
         return output
 
@@ -153,11 +153,11 @@ class TweetList(object):
         :return: list of PrepTweet instances
         """
         output = [tweet for tweet in self.tweets.values()
-                  if tweet.is_relevant == 0]
+                  if tweet.relevance == 0]
         output.sort(key=lambda _tweet: _tweet.id)
         return output
 
-    def as_list(self, only_geo=False, randomize=False):
+    def as_list(self, only_geo=False, randomize=False, coded_for=None):
         """
         Return the tweets as a list
         :param BoolType only_geo: If true, only
@@ -174,6 +174,9 @@ class TweetList(object):
                       if tweet.has_geotag]
         else:
             output = list(self.tweets.values())
+        if coded_for is not None:
+            output = [tweet for tweet
+                      in output if tweet.has_been_coded_for(coded_for)]
         if randomize:
             shuffle(output)
         else:
@@ -195,7 +198,7 @@ class TweetList(object):
         """
         Return a collection of the tweets that have geotags
         :param str tweet_format: format specifier for the tweets
-        :return: list or dict (depends on as_list argument)
+        :return: dict
         """
         if tweet_format == "Status":
             def fn(_tweet):

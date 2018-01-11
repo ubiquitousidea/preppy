@@ -83,19 +83,19 @@ class PrepTweet(object):
 
     def lookup(self, variable_name):
         try:
-            return self.__getattribute__(variable_name)
+            return self.metadata.lookup(variable_name)
         except AttributeError as e:
             e.message = "Unknown PrepTweet attribute {}".format(variable_name)
             raise e
 
     @property
     @silence_errors_return_nothing
-    def is_relevant(self):
+    def relevance(self):
         """
         Determine, by some means, if if the tweet is relevant to the search terms
         :return:
         """
-        return self.metadata.is_relevant
+        return self.metadata.relevance
 
     @property
     @silence_errors_return_nothing

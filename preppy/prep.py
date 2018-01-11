@@ -233,7 +233,7 @@ class Preppy(object):
                 # variable, do not show the tweet again
                 continue
 
-            p_relevance = tweet.is_relevant
+            p_relevance = tweet.relevance
 
             if variable_name != "RELEVANCE" \
                     and p_relevance is not None \

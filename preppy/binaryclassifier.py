@@ -46,12 +46,12 @@ class TweetClassifier(object):
         # use the RF model
         self.model = RandomForestClassifier()
 
-    def train(self, *tweets, variable_name=None):
+    def train(self, tweets, variable_name=None):
         """
         Using words in self.indicator_words, train the model using indicator variables
         as predictors.
 
-        :param tweets: arbitrary number of PrepTweet objects
+        :param tweets: list of PrepTweet objects
         :param variable_name: name of the variable to train on
             overrides what is set by __init__
         :return: NoneType
@@ -59,7 +59,6 @@ class TweetClassifier(object):
         if variable_name is not None:
             self.warn_if_trained(self.variable_name, variable_name)
             self.variable_name = variable_name
-
         responses = []
         indicators = []
         for tweet in tweets:
@@ -68,17 +67,12 @@ class TweetClassifier(object):
             words = tweet.words
             self.add_words(words=words, value=value)
             responses.append(value)
-
-        # self.indicator_words is set by the following function
         self.factor_select_initial()
-
         for tweet in tweets:
             ind = self.evaluate_indicators(tweet.words)
             indicators.append(ind)
-
         x = array(indicators, ndmin=2, dtype=int)
-        y = array(responses, ndmin=2)
-
+        y = array(responses)
         self.model.fit(x, y)
 
     def predict(self, tweet):
@@ -97,6 +91,7 @@ class TweetClassifier(object):
         :return: predicted value for the variable named in self.variable_name
         """
         indicators = self.evaluate_indicators(words)
+        indicators = array(indicators, ndmin=2)  # I am fine with 1d arrays but scikit-learn raises deprecation warning
         prediction = self.model.predict(indicators)
         return prediction
 
@@ -106,14 +101,12 @@ class TweetClassifier(object):
         :param tweet_words: set of words observed
         :return: list of integers
         """
+        if tweet_words is None:
+            return [0. for word in self.indicator_words]
         tweet_words = set(tweet_words)
         evaluate = vectorize(lambda _word: int(_word in tweet_words))
         indicators = evaluate(self.indicator_words)
         return indicators
-
-    @staticmethod
-    def assert_all_elements_are_strings(words):
-        assert all([type(item) is str for item in words])
 
     def get_word_specificity(self):
         # TODO: Move this feature from the ReportWriter to this class
@@ -147,11 +140,13 @@ class TweetClassifier(object):
         :param value: True/False
         :return: NoneType
         """
+        if words is None:
+            return
         value = str(value)  # make safe for json I/O
         self.assert_all_elements_are_strings(words)
-        if value not in self.words:
-            self.words[value] = set()
-        self.words[value].update(words)
+        wordset = set(self.words[value]) if value in self.words else set()
+        wordset.update(words)
+        self.words[value] = wordset
 
     def warn_if_trained(self, v1, v2):
         if self.is_trained:
@@ -196,6 +191,7 @@ class TweetClassifier(object):
         d = self.__dict__
         # convert to list to be json safe
         d['words'] = {value: list(words) for value, words in self.words.items()}
+        d['model'] = dict(self.model.get_params())
         return d
 
     @classmethod
@@ -210,6 +206,9 @@ class TweetClassifier(object):
         obj.__dict__.update(d)
         obj.words = {value: set(words) for value, words in d['words'].items()}
 
+    @staticmethod
+    def assert_all_elements_are_strings(words):
+        assert all([type(item) is str for item in words])
 
 
 
