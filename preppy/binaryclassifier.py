@@ -59,6 +59,7 @@ class TweetClassifier(object):
             assert isinstance(tweet, PrepTweet)
             value = tweet.lookup(self.variable_name)
             words = tweet.words
+            self.add_words(words=words, value=value)
             response.append(value)
 
         self.factor_select_initial()  # self.indicator_words is set by this function
@@ -97,14 +98,30 @@ class TweetClassifier(object):
     def assert_all_elements_are_strings(words):
         assert all([type(item) is str for item in words])
 
+    def get_word_specificity(self):
+        # TODO: Move this feature from the ReportWriter to this class
+        pass
+
     def factor_select_initial(self):
         """
         A preliminary factor selection step to reduce the number of
         choices given to the predictive model
+        Logic: use any 100% specific word as a potential indicator
+        (words that appear only in a single factor level of the variable)
         :return: NoneType
         """
+        indicators = set()
+        factor_levels = self.words.keys()
+        for level, words in self.words.items():
 
-        pass
+            other_levels = set(factor_levels) - {level}
+            w1 = set(words)  # words associated with this factor level
+            w2 = set()  # words associated with the other factor levels
+            for other_level in other_levels:
+                w2.update(self.words.get(other_level))
+            specific_words = w1 - w2
+            indicators.update(specific_words)
+
 
     def add_words(self, words, value):
         """
@@ -116,7 +133,7 @@ class TweetClassifier(object):
         value = str(value)  # make safe for json I/O
         assert self.assert_all_elements_are_strings(words)
         if value not in self.words:
-            self.words[value] = set({})
+            self.words[value] = set()
         wordset = self.words.get(value)
         wordset.update(words)
 
