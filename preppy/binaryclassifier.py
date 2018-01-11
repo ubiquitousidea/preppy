@@ -1,86 +1,110 @@
-"""
-This will be a class that implements a model of a binary outcome which will be known in
-a series of cases. Concretely, we want to model the relevance of a tweet object given
-the series of tweets and their manually coded relevance scores.
-
-Where are the tweets stored? A TweetList. Each element of the TweetList is a PrepTweet object.
-Code the relevance of the tweets manually (grad students) and store this in their metadata
-attributes which are MetaData objects.
-
-Pass the model a series of these Tweets with relevance coded. Iteratively update a model that
-looks for the most discriminating feature of each tweet. Features can be presence of words, lack
-of words (the logical inverse). The model F(tweet) takes the form of series of boolean algebra operations.
-To construct discriminating statements, we will use boolean addition (OR) and boolean multiplication (AND)
-
-F(tweet) = f1(tweet) + f2(tweet)
-f1(tweet) :: does the tweet contain the hashtag #LGBT?
-f2(tweet) :: does the tweet contain the hashtag #bbbh?
-F(tweet)  :: does the tweet contain #LGBT or contain #bbbh?
-
-Consider, however, that lacking a irrelevance indicator doesn't mean the tweet is relevant.
-Lacking this indicator merely doesn't disqualify the tweet.
-
-How about:
-A model of relevance and irrelevance. We should have a model that says the tweet must be both
-relevant and not irrelevant. Achieve this with negation and boolean multiplication.
-
-R(tweet)  :: does the tweet contain any indicators of relevance
-I(tweet)  :: does the tweet contain any indicators of irrelevance
-~I(tweet) :: does the tweet contain no indicators of irrelevance
-F(tweet)  == R(tweet) * ~I(tweet)
-F(tweet)  :: relevant and not irrelevant
-
-The form of this model is two boolean sums, one negated, and them multiplied.
-The trouble will be finding the most discriminating indicators to start with.
-This model probably will depend on use of a good prior. Take the first N training
-observations. Take the set difference of their words (maybe hashtags too) in
-both directions
-
-Wr  :: the set of words used in all the relevant tweets
-Wi  :: the set of words used in all the irrelevant tweets
-Wip == Wi - Wr  (P is for possible)
-Wip :: the set of words that appear in Irrelevant tweets but none of those that appear in Relevant tweets
-Wrp == Wr - Wi
-Wrp :: the set of words that appear in Relevant tweets but none of those that appear in Irrelevant tweets
-
-Of the possible words, see which discriminate in cross validation the best.
-That is, divide the training set into 80% -> Train, 20% -> Test
-Train a model to discriminate on a subset of the words (as described above)
-Predict the relevance F(tweet) of the test set and measure the error rate.
-Iterate to find the set of words that minimizes cross validation error metric.
-
-"""
-
-
 from preppy.preptweet import PrepTweet
+from preppy.metadata import MetaData
+from sklearn.ensemble import RandomForestClassifier
+
+from numpy import (
+    zeros_like, vectorize
+)
 
 
 class TweetClassifier(object):
     """
     An object to classify things
     """
-    def __init__(self, vname=None):
+    def __init__(self, variable_name):
         """
+        (This may be slow since it's in interpreted Python. Check to see if there
+        exists a python implementation for RandomForest model)
+
         Multinomial classifier
-        :param vname: name of the variable that this model is concerned with
+
+        Train this object with sets of indicators and an associated discrete variable.
+
+        This object will make predictions about the value of this variable for
+            observed sets of indicators
+
+        :param variable_name: name of the variable that this model is concerned with
         """
-        self.variable_name = "" if vname is None else vname
+        variable_name = str(variable_name).lower()
+        assert variable_name in MetaData().variable_names()
+        self.variable_name = variable_name
+
+        # These are the words whose presence is used
+        # as predictor matrix in classifier
+        self.indicator_words = []
+
         # words dict:
         # primary key: value of the variable
         # secondary key: a set of words observed in
-        #   conjunction with that variable value.
+        # conjunction with that variable value.
         self.words = {}
 
-    def train(self, tweet, value):
+        # use the RF model
+        self.model = RandomForestClassifier()
+
+    def train(self, *tweets, variable_name=None):
         """
-        :param tweet: PrepTweet object
-        :param value: value of the variable associated with this tweet
+        Using words in self.indicator_words, train the model using indicator variables
+        as predictors.
+
+        :param tweets: arbitrary number of PrepTweet objects
+        :param variable_name: name of the variable to train on (may already be set by __init__)
         :return: NoneType
         """
-        assert isinstance(value, bool)
+        if variable_name is not None:
+            self.variable_name = variable_name
+
+        response = []
+        for tweet in tweets:
+            assert isinstance(tweet, PrepTweet)
+            value = tweet.lookup(self.variable_name)
+            words = tweet.words
+            response.append(value)
+
+        self.factor_select_initial()  # self.indicator_words is set by this function
+
+    def predict(self, tweet):
+        """
+        Wrapper for the discriminant function
+        :param tweet: PrepTweet object
+        :return:
+        """
         assert isinstance(tweet, PrepTweet)
-        words = tweet.words
-        self.add_words(words, value)
+        return self.discriminant(tweet.words)
+
+    def discriminant(self, words):
+        """
+        Evaluate the discriminant function
+        :param words: list or set of words observed
+        :return: predicted value for the variable named in self.variable_name
+        """
+        indicators = self.evaluate_indicators(words)
+        prediction = self.model.predict(indicators)
+        return prediction
+
+    def evaluate_indicators(self, tweet_words):
+        """
+        Vectorize the operation of evaluating presence of each
+        :param tweet_words: set of words observed
+        :return: list of integers
+        """
+        tweet_words = set(tweet_words)
+        evaluate = vectorize(lambda _word: int(_word in tweet_words))
+        indicators = evaluate(self.indicator_words)
+        return indicators
+
+    @staticmethod
+    def assert_all_elements_are_strings(words):
+        assert all([type(item) is str for item in words])
+
+    def factor_select_initial(self):
+        """
+        A preliminary factor selection step to reduce the number of
+        choices given to the predictive model
+        :return: NoneType
+        """
+
+        pass
 
     def add_words(self, words, value):
         """
@@ -90,13 +114,11 @@ class TweetClassifier(object):
         :return: NoneType
         """
         value = str(value)  # make safe for json I/O
-        assert type(words) is list
-        assert all([type(word) is str for word in words])
+        assert self.assert_all_elements_are_strings(words)
         if value not in self.words:
             self.words[value] = set({})
         wordset = self.words.get(value)
         wordset.update(words)
 
-    def classify(self, tweet):
-        assert isinstance(tweet, PrepTweet)
+
 

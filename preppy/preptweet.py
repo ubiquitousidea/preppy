@@ -81,6 +81,13 @@ class PrepTweet(object):
         """
         return self.metadata.has_been_coded_for(vname)
 
+    def lookup(self, variable_name):
+        try:
+            return self.__getattribute__(variable_name)
+        except AttributeError as e:
+            e.message = "Unknown PrepTweet attribute {}".format(variable_name)
+            raise e
+
     @property
     @silence_errors_return_nothing
     def is_relevant(self):

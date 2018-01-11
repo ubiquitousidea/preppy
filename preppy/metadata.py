@@ -21,6 +21,9 @@ class MetaData(object):
         for attribute, value in kwargs.items():
             setattr(self, attribute.lower(), value)
 
+    def variable_names(self):
+        return self.__dict__.keys()
+
     def record(self, param, user_id, value):
         """
         Record a piece of metadata in this object
@@ -35,6 +38,17 @@ class MetaData(object):
                 user_id: value
             }
         )
+        setattr(self, param.lower(), param_dict)
+
+    def lookup(self, param):
+        """
+        Get the average value for this parameter
+        Average taken over all users who coded for this variable
+        :param param: the variable in question
+        :return: the average value for that variable
+        """
+        user_dict = getattr(self, param.lower())
+        return mean(user_dict.values())
 
     def has_been_coded_for(self, param):
         """
