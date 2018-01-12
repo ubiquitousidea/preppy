@@ -17,11 +17,6 @@ class TweetClassifier(object):
     """
     def __init__(self, variable_name):
         """
-        (This may be slow since it's in interpreted Python. Check to see if there
-        exists a python implementation for RandomForest model)
-
-        Multinomial classifier
-
         Train this object with sets of indicators and an associated discrete variable.
 
         This object will make predictions about the value of this variable for
@@ -37,7 +32,6 @@ class TweetClassifier(object):
         # as predictor matrix in classifier
         self.indicator_words = []
 
-        # words dict:
         # primary key: value of the variable
         # secondary key: a set of words observed in
         # conjunction with that variable value.
@@ -75,14 +69,19 @@ class TweetClassifier(object):
         y = array(responses)
         self.model.fit(x, y)
 
-    def predict(self, tweet):
+    def predict(self, tweets):
         """
         Wrapper for the discriminant function
-        :param tweet: PrepTweet object
-        :return:
+        :param tweets: PrepTweet object or list thereof
+        :return: array of predictions
         """
-        assert isinstance(tweet, PrepTweet)
-        return self.discriminant(tweet.words)
+        if isinstance(tweets, (list, tuple)):
+            output = []
+            for tweet in tweets:
+                output.append(self.discriminant(tweet.words))
+            return array(output).squeeze()
+        elif isinstance(tweets, PrepTweet):
+            return self.discriminant(tweets.words)
 
     def discriminant(self, words):
         """
