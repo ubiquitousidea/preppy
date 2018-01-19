@@ -1,9 +1,31 @@
 from numpy import mean
-from preppy.misc import CodeBook, MISSING, get_logger
+from preppy.misc import CodeBook, MISSING, get_logger, read_csv
+import re
 
 
 CODE_BOOK = CodeBook.from_json('codebook.json')
 logger = get_logger(__file__)
+
+
+AIDSVU_CITIES = read_csv("cities_of_interest.csv")  # this from aidvu.org
+
+
+def place_of_interest(place_name):
+    """
+    Is the place interesting to the thesis?
+    Places of interest are cities for which city level
+    AIDS prevalence data is available on aidsvu.org
+    :param place_name: name of a place
+        (possibly from twitter user place attribute)
+    :return: BoolType
+    """
+    for city, state in AIDSVU_CITIES:
+        matches = re.search(pattern=city, string=place_name)
+        if matches:
+            return True
+        else:
+            continue
+    return False
 
 
 class MetaData(object):
