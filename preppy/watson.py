@@ -44,8 +44,9 @@ class Watson():
     def call_nlu(self, tweet):
         result = self.nlu.analyze(
             text=tweet,
-            features = [features.Concepts(), features.Keywords(), features.Emotion(), features.Sentiment()])
+            features=[features.Concepts(), features.Keywords(), features.Emotion(), features.Sentiment()])
         return result 
+
 
 def read_ids(id_file): 
     """Get IDs of tweets classified as relevant by keyword_classify.R 
@@ -55,12 +56,14 @@ def read_ids(id_file):
         ids = f.read().replace('"', '').splitlines()
     return ids[1::]
 
+
 def parse_args(): 
     parser = argparse.ArgumentParser()
     parser.add_argument("-session", "--session", required = True)
     parser.add_argument("-config", "--config", required = True)
     parser.add_argument("-idfile", "--idfile", required = True)
     return parser.parse_args()
+
 
 def main():
     """Procedural code remains here until integrated with preppy application logic"""
@@ -88,7 +91,9 @@ def main():
                 print("Unknown error on tweet %s" % k)
                 break
 
-    write_json(session)
+    # this should really be done by Preppy object
+    write_json(session_file, fn="preppy_session.json")
+
 
 if __name__ == '__main__':
     main()
