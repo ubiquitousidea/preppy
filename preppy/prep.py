@@ -16,7 +16,7 @@ from preppy.misc import (
     ask_param, MISSING, rehydrate_tweets,
     get_logger
 )
-from preppy.metadata import CODE_BOOK
+from preppy.metadata import CODE_BOOK, place_of_interest
 from preppy.preptweet import PrepTweet
 from preppy.tweet_list import TweetList
 
@@ -175,12 +175,16 @@ class Preppy(object):
         for tweet in self.tweets.tweets.values():
             assert isinstance(tweet, PrepTweet)
             place_name = tweet.user_place
-            if place_name is None:
+            if place_name is None or not place_of_interest(place_name):
                 continue
             coords = self.placeinfo.get_coordinates(place_name)
             if coords:
                 logger.info("Place Name: {}, Coordinates {}".format(place_name, coords))
-                tweet.metadata.record("user_place_coordinates", "google_geocoding", coords)
+                tweet.metadata.record(
+                    param="user_place_coordinates",
+                    user_id="google_geocoding",
+                    value=coords
+                )
                 n += 1
             if n >= nmax:
                 break
@@ -233,7 +237,7 @@ class Preppy(object):
                 # variable, do not show the tweet again
                 continue
 
-            p_relevance = tweet.is_relevant
+            p_relevance = tweet.relevance
 
             if variable_name != "RELEVANCE" \
                     and p_relevance is not None \

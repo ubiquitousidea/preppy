@@ -141,7 +141,7 @@ class ReportWriter(object):
 
         for tweet in self.tweets.as_list():
             assert isinstance(tweet, PrepTweet)
-            relevant = tweet.is_relevant
+            relevant = tweet.relevance
             hashtags = tweet.hashtags
             if not hashtags:
                 continue

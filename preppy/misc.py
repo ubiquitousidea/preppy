@@ -365,6 +365,23 @@ def read_json(fn=None):
     return d
 
 
+def read_csv(fname, default=None):
+    """
+    Return a list of lists by reading a CSV file
+    :param fname: name of the file.
+    :param default: value to return if read fails.
+    :return: list of lists
+    """
+    result = default
+    try:
+        with open(fname, 'r') as fh:
+            lines = fh.read().splitlines()
+        result = [line.split(",") for line in lines]
+    except:
+        pass
+    return result
+
+
 def minidate(dt, fmt=DT_FORMATS["TWITTER"]):
     """
     Convert a datetime object into a string

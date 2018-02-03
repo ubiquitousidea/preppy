@@ -81,14 +81,30 @@ class PrepTweet(object):
         """
         return self.metadata.has_been_coded_for(vname)
 
+    def lookup(self, variable_name):
+        try:
+            return self.metadata.lookup(variable_name)
+        except AttributeError as e:
+            e.message = "Unknown PrepTweet attribute {}".format(variable_name)
+            raise e
+
     @property
     @silence_errors_return_nothing
     def is_relevant(self):
         """
-        Determine, by some means, if if the tweet is relevant to the search terms
+        Return the average of all user encoded relevance scores
         :return:
         """
         return self.metadata.is_relevant
+
+    @property
+    @silence_errors_return_nothing
+    def relevance(self):
+        """
+        Determine, by some means, if if the tweet is relevant to the search terms
+        :return: dictionary of relevance
+        """
+        return self.metadata.relevance
 
     @property
     @silence_errors_return_nothing
@@ -195,16 +211,26 @@ class PrepTweet(object):
     def coordinates(self):
         """
         Return the GPS coordinates of the tweet.
-
-        These coordinates were encoded by the mobile twitter user's
-        mobile device at the time of twitter use.
-
+        These coordinates are obtained in one of two ways
+        1 (Preferred):
+            These coordinates were encoded by the mobile twitter user's
+            mobile device at the time of twitter use.
+        2 (If 1 is not available)
+            Look for user place coordinates in the metadata
+            These would have been encoded by the PlaceInfo class
+            which uses Google Geocoding API.
+        3 Else
+            Return south pole (0,0)
         Be careful to note that the coordinates listed as the corners of the
         bounding box under status.place['bounding_box']['coordinates'] are
         in the format [lat, lng];
 
         :return: list of floats [lat, lng]
         """
+        # TODO: Add the feature where coordinates come from multiple sources.
+        # Consider whether or not you'd want to output the categorical
+        # variable indicating the source of the coordinate data or
+        # make the user place coordinates a different property entirely.
         try:
             bounding_box = array(
                 self.status.place
@@ -295,4 +321,7 @@ class PrepTweet(object):
         :return: BoolType (True/False)
         """
         place = self.place
+        # TODO: Add the feature where it considers a tweet to be geotagged
+        # if the user place coordinates have been encoded by PlaceInfo().
+        # user_coords = self.metadata.user_place_coordinates
         return place is not None
