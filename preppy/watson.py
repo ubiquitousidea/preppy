@@ -21,7 +21,6 @@ class Watson(object):
         self.version = version
         self.creds = self._parse_config(config_file)
         self.api = self._get_api()
-
     def _parse_config(self, config_file):
         with open(config_file, "r") as f:
             config = json.load(f)
@@ -74,14 +73,14 @@ def main():
     id_file = args.idfile
     relevant_ids = read_ids(id_file)
     tweets = read_json(session_file)
-    watson = Watson(config_file)
+    nlu = NLU(config_file)
 
     for k in tweets.keys():
         if k in relevant_ids:
             try:
                 tweet_text = tweets[k]['status']['full_text']
                 print("Analyzing tweet %s" % k)
-                tweets[k]['nlu'] = watson.call_nlu(tweet_text)
+                tweets[k]['nlu'] = nlu.analyze(tweet_text)
             except WatsonException:
                 print("WatsonException on %s" % k)
                 tweets[k]['nlu'] = None
