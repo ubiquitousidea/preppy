@@ -8,47 +8,48 @@ Outputs: appends subdict within a tweet dict called 'nlu',
 """
 
 import watson_developer_cloud
-import watson_developer_cloud.natural_language_understanding.features.v1 as features
+from watson_developer_cloud.natural_language_understanding_v1 import Features
 from watson_developer_cloud.watson_developer_cloud_service import WatsonException
 
 import argparse
 from preppy.misc import (read_json, write_json)
+import json
 
-class Watson():
-    """Handles communication with IBM Watson
-    
-    Currently only talks to NLU API, 
-    Support for other watson APIs can be added.
-    """
-    
-    def __init__(self, config_file):
+class Watson(object):
+    """Base class to interface preppy with watson_developer_cloud"""
+    def __init__(self, config_file, version):
+        self.version = version
         self.creds = self._parse_config(config_file)
-        self.nlu = self._get_nlu()
-    
+        self.api = self._get_api()
+
     def _parse_config(self, config_file):
         with open(config_file, "r") as f:
             config = json.load(f)
             creds = config.get("watson")
             return creds
 
-    def _get_nlu(self):
-        username = self.creds.get('username')
-        password = self.creds.get('password')
-        version = "2017-02-27"
-        nlu = watson_developer_cloud.NaturalLanguageUnderstandingV1(
-            username=username,
-            password=password,
-            version=version)
-        return nlu
-
-    def call_nlu(self, tweet):
-        result = self.nlu.analyze(
-            text=tweet,
-            features=[features.Concepts(), features.Keywords(), features.Emotion(), features.Sentiment()])
-        return result 
+    def _get_api(self):
+        raise NotImplementedError()
 
 
-def read_ids(id_file): 
+class NLU(Watson):
+    """Interface to Watson's Natural Language Understanding service"""
+    def __init__(self, *args, **kwargs):
+        Watson.__init__(self, *args, **kwargs)
+
+    def _get_api(self):
+        api = watson_developer_cloud.NaturalLanguageUnderstandingV1(
+            username=self.creds.get('username'),
+            password=self.creds.get('password'),
+            version=self.version)
+        return api
+
+    def analyze(self, *args, **kwargs):
+        result = self.api.analyze(*args, **kwargs)
+        return result
+
+
+def read_ids(id_file):
     """Get IDs of tweets classified as relevant by keyword_classify.R 
     Assumes a .csv file with one column and one column header"""
 
@@ -57,7 +58,7 @@ def read_ids(id_file):
     return ids[1::]
 
 
-def parse_args(): 
+def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-session", "--session", required = True)
     parser.add_argument("-config", "--config", required = True)
@@ -74,7 +75,7 @@ def main():
     relevant_ids = read_ids(id_file)
     tweets = read_json(session_file)
     watson = Watson(config_file)
-    
+
     for k in tweets.keys():
         if k in relevant_ids:
             try:
@@ -84,7 +85,7 @@ def main():
             except WatsonException:
                 print("WatsonException on %s" % k)
                 tweets[k]['nlu'] = None
-            except KeyError: 
+            except KeyError:
                 print("KeyError on tweet %s" % k)
                 tweets[k]['nlu'] = None
             except:
