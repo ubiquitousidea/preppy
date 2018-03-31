@@ -82,16 +82,6 @@ class MetaData(object):
         return len(getattr(self, param.lower())) != 0
 
     @property
-    def keyword_relevant(self):
-        """
-        Indicate whether keyword_classify.R classified this tweet as relevant or irrelevant
-        :return: BoolType
-        """
-        result = self.relevance.get("keyword_classify.R")
-        result = bool(result)
-        return result
-
-    @property
     def is_relevant(self):
         """
         return the average of encoded relevance
@@ -108,6 +98,16 @@ class MetaData(object):
             )
         else:
             return MISSING
+
+    @property
+    def keyword_relevant(self):
+        """
+        Indicate whether keyword_classify.R classified this tweet as relevant or irrelevant
+        :return: BoolType
+        """
+        result = self.relevance.get("keyword_classify.R")
+        result = bool(result)
+        return result
 
     @property
     def as_dict(self):
