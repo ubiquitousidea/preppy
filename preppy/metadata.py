@@ -75,11 +75,25 @@ class MetaData(object):
 
     def has_been_coded_for(self, param):
         """
-        Say whether or not a given variable has been coded by at least one person
+        Say whether or not a given variable has been coded by at least one person/utility
         :param param: variable name that may have been coded
         :return: BoolType (True/False)
         """
         return len(getattr(self, param.lower())) != 0
+
+    def has_been_coded_by(self, vname, coder_name):
+        """
+        Say whether or not a given variable has been coded by a specific person/utility
+        :param vname: the variable name that may have been coded
+        :param coder_name: the coder of interest
+        :return: BoolType
+        """
+
+        if self.has_been_coded_for(vname):
+            if self.as_dict[vname].get(coder_name):
+                return True
+        else:
+            return False
 
     @property
     def is_relevant(self):

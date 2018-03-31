@@ -81,6 +81,15 @@ class PrepTweet(object):
         """
         return self.metadata.has_been_coded_for(vname)
 
+    def has_been_coded_by(self, vname, coder):
+        """
+        Say whether or not a given variable has been coded by a specific person/utility
+        :param vname: the variable name that may have been coded
+        :param coder_name: the coder of interest
+        :return: BoolType
+        """
+        return self.metadata.has_been_coded_by(vname, coder)
+
     def lookup(self, variable_name):
         try:
             return self.metadata.lookup(variable_name)
