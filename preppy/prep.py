@@ -193,6 +193,11 @@ class Preppy(object):
         self.placeinfo.to_json("place_info.json")
 
     def encode_rscript_results(self):
+        """
+        For every tweet: check if determined relevant by keyword_classify.R
+        and store result in relevance dict inside of MetaData
+        :return:
+        """
         relevant_ids = read_rscript_output("relevant_ids.csv")
         for ID, tweet in self.tweets.tweets.items():
             assert isinstance(tweet, PrepTweet)
