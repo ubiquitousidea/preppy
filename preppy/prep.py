@@ -16,6 +16,8 @@ from preppy.misc import (
     ask_param, MISSING, rehydrate_tweets,
     get_logger
 )
+
+from preppy.watson import read_ids
 from preppy.metadata import CODE_BOOK, place_of_interest
 from preppy.preptweet import PrepTweet
 from preppy.tweet_list import TweetList
@@ -191,6 +193,26 @@ class Preppy(object):
         logger.info("Successfully encoded {} user place coordinates".format(n))
         logger.info("Did so by making {} api calls to Google".format(self.placeinfo.api_counter))
         self.placeinfo.to_json("place_info.json")
+
+    def encode_rscript_results(self):
+        relevant_ids = read_ids("relevant_ids.csv")
+        for ID, tweet in self.tweets.tweets.items():
+            assert isinstance(tweet, PrepTweet)
+            if ID in relevant_ids:
+                tweet.metadata.encode(
+                    param="relevance",
+                    user_id="keyword_classify.R",
+                    value=1
+                )
+            else:
+                tweet.metadata.encode(
+                    param="relevance",
+                    user_id="keyword_classify.R",
+                    value=0
+                )
+        # TODO add logging information
+
+
 
     def rehydrate_tweets(self):
         """

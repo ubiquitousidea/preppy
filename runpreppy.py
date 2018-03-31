@@ -5,6 +5,7 @@ from preppy import (
 from preppy.report_writer import ReportWriter
 import argparse
 import logging
+import subprocess
 
 
 def _parse_args():
@@ -36,6 +37,10 @@ def _parse_args():
                         help="If present, preppy session will not be saved and no backups will be made",
                         action="store_true",
                         default=False)
+    parser.add_argument("-keyword_classify", "--keyword_classify", "-keyword", "--keyword",
+                        help="Preppy will write a csv report, run keyword_classify.R, and store the results",
+                        action="store_true",
+                        default=False)
     return parser.parse_args()
 
 
@@ -48,6 +53,7 @@ report = args.report
 ntweets = args.ntweets
 updatetweets = args.updatetweets
 noclean = args.noclean
+keyword_classify = args.keyword_classify
 
 # Configure logging here
 logger = logging.getLogger('preppy')
@@ -82,6 +88,12 @@ with cd(wd):
     if terms:
         logger.info("Retrieving new tweets")
         Session.get_more_tweets(terms)
+    if keyword_classify:
+        reportwriter = ReportWriter(Session)
+        reportwriter.write_report_all("all_tweet_report.csv", fmt='csv')
+        subprocess.call(["Rscript", "./scripts/keyword_classify.R", "all_tweets_report.csv"])
+        Session.encode_rscript_results()
+
     if encode:
         if encode == "user_place":
             Session.encode_user_location(nmax=ntweets)
