@@ -14,10 +14,8 @@ from preppy.misc import (
     get_twitter_api, write_json,
     backup_session, make_list, cull_old_files,
     ask_param, MISSING, rehydrate_tweets,
-    get_logger
+    get_logger, read_rscript_output
 )
-
-from preppy.watson import read_ids
 from preppy.metadata import CODE_BOOK, place_of_interest
 from preppy.preptweet import PrepTweet
 from preppy.tweet_list import TweetList
@@ -195,7 +193,7 @@ class Preppy(object):
         self.placeinfo.to_json("place_info.json")
 
     def encode_rscript_results(self):
-        relevant_ids = read_ids("relevant_ids.csv")
+        relevant_ids = read_rscript_output("relevant_ids.csv")
         for ID, tweet in self.tweets.tweets.items():
             assert isinstance(tweet, PrepTweet)
             if ID in relevant_ids:
