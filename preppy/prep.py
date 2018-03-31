@@ -197,13 +197,13 @@ class Preppy(object):
         for ID, tweet in self.tweets.tweets.items():
             assert isinstance(tweet, PrepTweet)
             if ID in relevant_ids:
-                tweet.metadata.encode(
+                tweet.metadata.record(
                     param="relevance",
                     user_id="keyword_classify.R",
                     value=1
                 )
             else:
-                tweet.metadata.encode(
+                tweet.metadata.record(
                     param="relevance",
                     user_id="keyword_classify.R",
                     value=0
