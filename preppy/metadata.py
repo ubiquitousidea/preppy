@@ -50,7 +50,7 @@ class MetaData(object):
         """
         Record a piece of metadata in this object
         :param param: name of the variable to be recorded
-        :param user_id: name of the user who coded this varible
+        :param user_id: name of the user who coded this variable
         :param value: the value that they coded
         :return: NoneType
         """

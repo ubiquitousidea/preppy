@@ -118,17 +118,17 @@ main <- function(keywords, tweet_report) {
   
   keep_frame <- prep[prep$keep, ]
   toss_frame <- prep[!prep$keep, ]
-  geotagged <- keep_frame[keep_frame$latitude != 0, ]
+  # geotagged <- keep_frame[keep_frame$latitude != 0, ]
   
   print(paste("Out of", nrow(prep), "tweets:", 
               nrow(keep_frame), "kept,", 
               nrow(toss_frame), "tossed"))
-  print(paste(nrow(geotagged), "geotagged relevant tweets"))
+  # print(paste(nrow(geotagged), "geotagged relevant tweets"))
   
-  outtime <- format(Sys.time(), "%Y-%m-%d_%H-%M")
-  #write.csv(keep_frame, paste0("kept_tweets_", outtime, ".csv"), row.names = FALSE)
-  #write.csv(toss_frame, paste0("tossed_tweets_", outtime, ".csv"), row.names = FALSE)
-  #write.csv(geotagged, paste0("relevant_geotagged_", outtime, ".csv"), row.names = FALSE)
+  # outtime <- format(Sys.time(), "%Y-%m-%d_%H-%M")
+  # write.csv(keep_frame, paste0("kept_tweets_", outtime, ".csv"), row.names = FALSE)
+  # write.csv(toss_frame, paste0("tossed_tweets_", outtime, ".csv"), row.names = FALSE)
+  # write.csv(geotagged, paste0("relevant_geotagged_", outtime, ".csv"), row.names = FALSE)
   write.csv(keep_frame$id_string, "relevant_ids.csv", row.names = FALSE)
 }
 
