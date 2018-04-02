@@ -145,8 +145,7 @@ class TweetList(object):
         output.sort(key=lambda _tweet: _tweet.id)
         return output
 
-    @property
-    def keyword_relevant(self, sample_size=None, randomize=False):
+    def get_keyword_relevant(self, sample_size=None, randomize=False):
         """
         Return a list of tweets that keyword_classify.R coded as relevant
         :param sample_size: number of tweets to return
