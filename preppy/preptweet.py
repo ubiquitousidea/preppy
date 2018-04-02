@@ -342,3 +342,51 @@ class PrepTweet(object):
         # if the user place coordinates have been encoded by PlaceInfo().
         # user_coords = self.metadata.user_place_coordinates
         return place is not None
+
+    @property
+    def has_nlu(self):
+        """
+        This and the methods defined below are a bit of a mess, we need a proper class to store watson output
+        :return: BoolType
+        """
+        return self.metadata.has_been_coded_for("nlu")
+
+    @property
+    def sentiment(self):
+        """
+        :return: dict
+        """
+        assert self.has_nlu
+        return self.metadata.as_dict['nlu']['sentiment']
+
+    @property
+    def doc_sentiment_score(self):
+        return self.sentiment['document']['score']
+
+    @property
+    def doc_sentiment_lab(self):
+        return self.sentiment['document']['label']
+
+    @property
+    def doc_emotion(self):
+        assert self.has_nlu
+        return self.metadata.as_dict['emotion']['document']['emotion']
+
+    @property
+    def doc_anger(self):
+        return self.doc_emotion.get('anger')
+
+    @property
+    def doc_disgust(self):
+        return self.doc_emotion.get('disgust')
+
+    @property
+    def doc_fear(self):
+        return self.doc_emotion.get('fear')
+
+    @property
+    def doc_joy(self):
+        return self.doc_emotion.get('joy')
+    @property
+    def doc_sadness(self):
+        return self.doc_emotion.get('sadness')
