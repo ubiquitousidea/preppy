@@ -9,7 +9,7 @@ Outputs: appends subdict within a tweet dict called 'nlu',
 
 import watson_developer_cloud
 from watson_developer_cloud.natural_language_understanding_v1 import Features
-from watson_developer_cloud.watson_developer_cloud_service import WatsonException
+# from watson_developer_cloud.watson_developer_cloud_service import WatsonException
 
 import argparse
 from preppy.misc import (read_json, write_json)
