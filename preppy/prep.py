@@ -19,6 +19,7 @@ from preppy.misc import (
 from preppy.metadata import CODE_BOOK, place_of_interest
 from preppy.preptweet import PrepTweet
 from preppy.tweet_list import TweetList
+from preppy.watson import NLU
 
 
 logger = get_logger(__file__)
@@ -45,6 +46,7 @@ class Preppy(object):
         self.backups_dir = backup_dir
         self.api = get_twitter_api(config_file)
         self.placeinfo = PlaceInfo.from_json(fname=place_info, config_file=config_file)
+        self.nlu = NLU(config_file)
 
     @property
     def as_dict(self):
@@ -214,6 +216,17 @@ class Preppy(object):
                     value=0
                 )
         # TODO add logging information
+
+    def get_nlu_data(self, sample_size=None, randomize=False):
+        tweets = self.tweets.get_keyword_relevant(sample_size, randomize)
+        for tweet in tweets:
+            response = self.nlu.analyze(tweet.text)
+            self.tweets.record_metadata(
+                id_str=tweet.id_str,
+                param='nlu',
+                user_id='watson_nlu',
+                value=response
+            )
 
     def rehydrate_tweets(self):
         """
