@@ -215,8 +215,6 @@ class Preppy(object):
                 )
         # TODO add logging information
 
-
-
     def rehydrate_tweets(self):
         """
         Rehydrate tweets from web
