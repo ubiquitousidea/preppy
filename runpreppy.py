@@ -41,6 +41,10 @@ def _parse_args():
                         help="Preppy will write a csv report, run keyword_classify.R, and store the results",
                         action="store_true",
                         default=False)
+    parser.add_argument("-test_watson", "--test_watson",
+                        help="Testing watson integration",
+                        action="store_true",
+                        default=False)
     return parser.parse_args()
 
 
@@ -54,6 +58,7 @@ ntweets = args.ntweets
 updatetweets = args.updatetweets
 noclean = args.noclean
 keyword_classify = args.keyword_classify
+test_watson = args.test_watson
 
 # Configure logging here
 logger = logging.getLogger('preppy')
@@ -104,6 +109,12 @@ with cd(wd):
                 only_geo=True
             )
             Session.tweets.tweets_coding_status()
+
+    if test_watson:
+        Session.get_nlu_data(sample_size=200, randomize=True)
+        report_writer = ReportWriter(Session)
+        report_writer.write_report_nlu("watson_report.csv")
+
     if report:
         Session.tweets.export_geotagged_tweets("geotagged_tweets.json")
         reportwriter = ReportWriter(Session)
