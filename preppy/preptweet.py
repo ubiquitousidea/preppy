@@ -107,6 +107,14 @@ class PrepTweet(object):
         return self.metadata.is_relevant
 
     @property
+    def keyword_relevant(self):
+        """
+        Determine if the tweet was coded as relevant by keyword_classify.R
+        :return: BoolType
+        """
+        return self.metadata.keyword_relevant
+
+    @property
     @silence_errors_return_nothing
     def relevance(self):
         """

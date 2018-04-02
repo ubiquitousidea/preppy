@@ -146,6 +146,22 @@ class TweetList(object):
         return output
 
     @property
+    def keyword_relevant(self, sample_size=None, randomize=False):
+        """
+        Return a list of tweets that keyword_classify.R coded as relevant
+        :param sample_size: number of tweets to return
+        :param randomize: uses numpy.random.shuffle
+        :return: list of PrepTweet instances
+        """
+        output = [tweet for tweet in self.tweets.values()
+                  if tweet.keyword_relevant == 1]
+        if randomize:
+            shuffle(output)
+        if sample_size:
+            output = output[:sample_size]
+        return output
+
+    @property
     def irrelevant(self):
         """
         Return the tweets that have been coded as irrelevant
