@@ -39,6 +39,7 @@ class MetaData(object):
         self.relevance = {}
         self.sentiment = {}
         self.location = {}
+        self.nlu = {}
         self.user_place_coordinates = {}
         for attribute, value in kwargs.items():
             setattr(self, attribute.lower(), value)
