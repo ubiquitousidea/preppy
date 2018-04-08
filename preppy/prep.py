@@ -20,7 +20,7 @@ from preppy.metadata import CODE_BOOK, place_of_interest
 from preppy.preptweet import PrepTweet
 from preppy.tweet_list import TweetList
 from preppy.watson import NLU
-from watson_developer_cloud.natural_language_understanding_v1 import Features
+from watson_developer_cloud.natural_language_understanding_v1 import Features, SentimentOptions
 
 
 logger = get_logger(__file__)
@@ -224,7 +224,7 @@ class Preppy(object):
     def get_nlu_data(self, sample_size=None, randomize=False):
         # TODO check if tweet in cities of interest
         tweets = self.tweets.get_keyword_relevant(sample_size, randomize)
-        features = [Features.Sentiment()]
+        features = [Features(sentiment=SentimentOptions())]
         for tweet in tweets:
             response = self.nlu.analyze(tweet.text, features)
             self.tweets.record_metadata(
