@@ -20,6 +20,7 @@ from preppy.metadata import CODE_BOOK, place_of_interest
 from preppy.preptweet import PrepTweet
 from preppy.tweet_list import TweetList
 from preppy.watson import NLU
+from watson_developer_cloud.natural_language_understanding_v1 import Features
 
 
 logger = get_logger(__file__)
@@ -200,6 +201,9 @@ class Preppy(object):
         and store result in relevance dict inside of MetaData
         :return:
         """
+
+        # this should be much safer.
+        # pass file as a param, check if it exists, is in the right format, etc.
         relevant_ids = read_rscript_output("relevant_ids.csv")
         for ID, tweet in self.tweets.tweets.items():
             assert isinstance(tweet, PrepTweet)
@@ -218,9 +222,11 @@ class Preppy(object):
         # TODO add logging information
 
     def get_nlu_data(self, sample_size=None, randomize=False):
+        # TODO check if tweet in cities of interest
         tweets = self.tweets.get_keyword_relevant(sample_size, randomize)
+        features = [Features.Sentiment()]
         for tweet in tweets:
-            response = self.nlu.analyze(tweet.text)
+            response = self.nlu.analyze(tweet.text, features)
             self.tweets.record_metadata(
                 id_str=tweet.id_str,
                 param='nlu',
