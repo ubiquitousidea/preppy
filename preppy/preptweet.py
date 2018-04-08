@@ -360,11 +360,17 @@ class PrepTweet(object):
 
     @property
     def doc_sentiment_score(self):
-        return self.sentiment['document']['score']
+        if self.sentiment is not None:
+            return self.sentiment['document']['score']
+        else:
+            return None
 
     @property
     def doc_sentiment_lab(self):
-        return self.sentiment['document']['label']
+        if self.sentiment is not None:
+            return self.sentiment['document']['label']
+        else:
+            return None
 
     @property
     def doc_emotion(self):
