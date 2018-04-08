@@ -109,12 +109,7 @@ class ReportWriter(object):
             ("hashtags", "hashtags"),
             ("relevance", "is_relevant"),
             ('doc_sentiment_score', 'doc_sentiment_score'),
-            ('doc_sentiment_lab', 'doc_sentiment_lab'),
-            ('doc_anger', 'doc_anger'),
-            ('doc_disgust', 'doc_disgust'),
-            ('doc_fear', 'doc_fear'),
-            ('doc_joy', 'doc_joy'),
-            ('doc_sadness', 'doc_sadness')
+            ('doc_sentiment_lab', 'doc_sentiment_lab')
         )
         column_order = [column_getter[0]
                         for column_getter
