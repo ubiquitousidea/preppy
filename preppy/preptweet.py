@@ -356,18 +356,21 @@ class PrepTweet(object):
         """
         :return: dict
         """
-        return self.metadata.as_dict['nlu'].get('sentiment')
+        if self.as_dict.get('nlu'):
+            return self.metadata['nlu']['watson_nlu']['sentiment']
+        else:
+            return None
 
     @property
     def doc_sentiment_score(self):
-        if self.sentiment is not None:
+        if self.sentiment:
             return self.sentiment['document']['score']
         else:
             return None
 
     @property
     def doc_sentiment_lab(self):
-        if self.sentiment is not None:
+        if self.sentiment:
             return self.sentiment['document']['label']
         else:
             return None
