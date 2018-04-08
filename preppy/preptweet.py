@@ -356,8 +356,7 @@ class PrepTweet(object):
         """
         :return: dict
         """
-        assert self.has_nlu
-        return self.metadata.as_dict['nlu']['sentiment']
+        return self.metadata.as_dict['nlu'].get('sentiment')
 
     @property
     def doc_sentiment_score(self):
@@ -369,8 +368,7 @@ class PrepTweet(object):
 
     @property
     def doc_emotion(self):
-        assert self.has_nlu
-        return self.metadata.as_dict['emotion']['document']['emotion']
+        return self.metadata.as_dict['emotion'].get('document')['emotion']
 
     @property
     def doc_anger(self):
