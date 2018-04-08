@@ -223,10 +223,12 @@ class Preppy(object):
 
     def get_nlu_data(self, sample_size=None, randomize=False):
         # TODO check if tweet in cities of interest
+        # TODO convert print to logging
         tweets = self.tweets.get_keyword_relevant(sample_size, randomize)
+
         features = Features(sentiment=SentimentOptions())
         for tweet in tweets:
-            response = self.nlu.analyze(tweet.text, features)
+            response = self.nlu.analyze(features=features, text=tweet.text)
             self.tweets.record_metadata(
                 id_str=tweet.id_str,
                 param='nlu',
