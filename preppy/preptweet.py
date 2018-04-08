@@ -356,7 +356,7 @@ class PrepTweet(object):
         """
         :return: dict
         """
-        if self.metadata.as_dict.get('nlu') is not None:
+        if self.metadata.as_dict['nlu'].get('watson_nlu') is not None:
             return self.metadata.as_dict['nlu']['watson_nlu']['sentiment']
         else:
             return None
