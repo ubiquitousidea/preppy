@@ -225,6 +225,7 @@ class Preppy(object):
         # TODO check if tweet in cities of interest
         # TODO convert print to logging
         tweets = self.tweets.get_keyword_relevant(sample_size, randomize)
+        tweets = [tweet for tweet in tweets if not tweet.has_nlu]
 
         features = Features(sentiment=SentimentOptions())
         for tweet in tweets:
