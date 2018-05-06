@@ -9,7 +9,7 @@ Outputs: appends subdict within a tweet dict called 'nlu',
 
 import watson_developer_cloud
 from watson_developer_cloud.natural_language_understanding_v1 import Features
-from watson_developer_cloud.watson_developer_cloud_service import WatsonException
+# from watson_developer_cloud.watson_developer_cloud_service import WatsonException
 
 import argparse
 from preppy.misc import (read_json, write_json)
@@ -17,8 +17,7 @@ import json
 
 class Watson(object):
     """Base class to interface preppy with watson_developer_cloud"""
-    def __init__(self, config_file, version):
-        self.version = version
+    def __init__(self, config_file):
         self.creds = self._parse_config(config_file)
         self.api = self._get_api()
     def _parse_config(self, config_file):
@@ -40,7 +39,7 @@ class NLU(Watson):
         api = watson_developer_cloud.NaturalLanguageUnderstandingV1(
             username=self.creds.get('username'),
             password=self.creds.get('password'),
-            version=self.version)
+            version=self.creds.get('version'))
         return api
 
     def analyze(self, *args, **kwargs):

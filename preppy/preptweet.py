@@ -81,6 +81,15 @@ class PrepTweet(object):
         """
         return self.metadata.has_been_coded_for(vname)
 
+    def has_been_coded_by(self, vname, coder):
+        """
+        Say whether or not a given variable has been coded by a specific person/utility
+        :param vname: the variable name that may have been coded
+        :param coder_name: the coder of interest
+        :return: BoolType
+        """
+        return self.metadata.has_been_coded_by(vname, coder)
+
     def lookup(self, variable_name):
         try:
             return self.metadata.lookup(variable_name)
@@ -96,6 +105,14 @@ class PrepTweet(object):
         :return:
         """
         return self.metadata.is_relevant
+
+    @property
+    def keyword_relevant(self):
+        """
+        Determine if the tweet was coded as relevant by keyword_classify.R
+        :return: BoolType
+        """
+        return self.metadata.keyword_relevant
 
     @property
     @silence_errors_return_nothing
@@ -325,3 +342,58 @@ class PrepTweet(object):
         # if the user place coordinates have been encoded by PlaceInfo().
         # user_coords = self.metadata.user_place_coordinates
         return place is not None
+
+    @property
+    def has_nlu(self):
+        """
+        This and the methods defined below are a bit of a mess, we need a proper class to store watson output
+        :return: BoolType
+        """
+        return self.metadata.has_been_coded_for("nlu")
+
+    @property
+    def sentiment(self):
+        """
+        :return: dict
+        """
+        if self.metadata.as_dict['nlu'].get('watson_nlu') is not None:
+            return self.metadata.as_dict['nlu']['watson_nlu']['sentiment']
+        else:
+            return None
+
+    @property
+    def doc_sentiment_score(self):
+        if self.sentiment:
+            return self.sentiment['document']['score']
+        else:
+            return None
+
+    @property
+    def doc_sentiment_lab(self):
+        if self.sentiment:
+            return self.sentiment['document']['label']
+        else:
+            return None
+
+    @property
+    def doc_emotion(self):
+        return self.metadata.as_dict['emotion'].get('document')['emotion']
+
+    @property
+    def doc_anger(self):
+        return self.doc_emotion.get('anger')
+
+    @property
+    def doc_disgust(self):
+        return self.doc_emotion.get('disgust')
+
+    @property
+    def doc_fear(self):
+        return self.doc_emotion.get('fear')
+
+    @property
+    def doc_joy(self):
+        return self.doc_emotion.get('joy')
+    @property
+    def doc_sadness(self):
+        return self.doc_emotion.get('sadness')

@@ -14,11 +14,14 @@ from preppy.misc import (
     get_twitter_api, write_json,
     backup_session, make_list, cull_old_files,
     ask_param, MISSING, rehydrate_tweets,
-    get_logger
+    get_logger, read_rscript_output
 )
 from preppy.metadata import CODE_BOOK, place_of_interest
 from preppy.preptweet import PrepTweet
 from preppy.tweet_list import TweetList
+from preppy.watson import NLU
+from watson_developer_cloud.natural_language_understanding_v1 import Features, SentimentOptions
+from watson_developer_cloud.watson_service import WatsonApiException
 
 
 logger = get_logger(__file__)
@@ -45,6 +48,7 @@ class Preppy(object):
         self.backups_dir = backup_dir
         self.api = get_twitter_api(config_file)
         self.placeinfo = PlaceInfo.from_json(fname=place_info, config_file=config_file)
+        self.nlu = NLU(config_file)
 
     @property
     def as_dict(self):
@@ -65,7 +69,6 @@ class Preppy(object):
         logger.info("There are {:d} tweets.".format(self.tweets.n))
         if _term is not None:
             logger.info("Retrieving more tweets related to {:}".format(_term))
-
 
     def status_posterior(self):
         logger.info("There are {:d} tweets now".format(self.tweets.n))
@@ -191,6 +194,49 @@ class Preppy(object):
         logger.info("Successfully encoded {} user place coordinates".format(n))
         logger.info("Did so by making {} api calls to Google".format(self.placeinfo.api_counter))
         self.placeinfo.to_json("place_info.json")
+
+    def encode_rscript_results(self):
+        """
+        For every tweet: check if determined relevant by keyword_classify.R
+        and store result in relevance dict inside of MetaData
+        :return:
+        """
+
+        # this should be much safer.
+        # pass file as a param, check if it exists, is in the right format, etc.
+        relevant_ids = read_rscript_output("relevant_ids.csv")
+        for ID, tweet in self.tweets.tweets.items():
+            assert isinstance(tweet, PrepTweet)
+            if ID in relevant_ids:
+                tweet.metadata.record(
+                    param="relevance",
+                    user_id="keyword_classify.R",
+                    value=1
+                )
+            else:
+                tweet.metadata.record(
+                    param="relevance",
+                    user_id="keyword_classify.R",
+                    value=0
+                )
+        # TODO add logging information
+
+    def get_nlu_data(self, sample_size=200, randomize=False):
+        # TODO check if tweet in cities of interest
+        # TODO convert print to logging
+        tweets = self.tweets.get_tweets_for_watson(sample_size, randomize)
+        features = Features(sentiment=SentimentOptions())
+        for tweet in tweets:
+            try:
+                response = self.nlu.analyze(features=features, text=tweet.text)
+            except WatsonApiException:
+                continue
+            self.tweets.record_metadata(
+                id_str=tweet.id_str,
+                param='nlu',
+                user_id='watson_nlu',
+                value=response
+            )
 
     def rehydrate_tweets(self):
         """

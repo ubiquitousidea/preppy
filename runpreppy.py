@@ -5,6 +5,7 @@ from preppy import (
 from preppy.report_writer import ReportWriter
 import argparse
 import logging
+import subprocess
 
 
 def _parse_args():
@@ -36,6 +37,17 @@ def _parse_args():
                         help="If present, preppy session will not be saved and no backups will be made",
                         action="store_true",
                         default=False)
+    parser.add_argument("-keyword_classify", "--keyword_classify", "-keyword", "--keyword",
+                        help="Preppy will write a csv report, run keyword_classify.R, and store the results",
+                        action="store_true",
+                        default=False)
+    parser.add_argument("-watson", "--watson",
+                        help="Send tweets through watson",
+                        action="store_true",
+                        default=False)
+    parser.add_argument("-nwatson", "--nwatson",
+                        help="Number of tweets to send to Waston (default=200)",
+                        default=200, type=int)
     return parser.parse_args()
 
 
@@ -48,6 +60,9 @@ report = args.report
 ntweets = args.ntweets
 updatetweets = args.updatetweets
 noclean = args.noclean
+keyword_classify = args.keyword_classify
+watson = args.watson
+n_watson = args.nwatson
 
 # Configure logging here
 logger = logging.getLogger('preppy')
@@ -82,6 +97,12 @@ with cd(wd):
     if terms:
         logger.info("Retrieving new tweets")
         Session.get_more_tweets(terms)
+    if keyword_classify:
+        reportwriter = ReportWriter(Session)
+        reportwriter.write_report_all("all_tweet_report.csv", fmt='csv')
+        subprocess.call(["Rscript", "./scripts/keyword_classify.R", "all_tweets_report.csv"])
+        Session.encode_rscript_results()
+
     if encode:
         if encode == "user_place":
             Session.encode_user_location(nmax=ntweets)
@@ -92,6 +113,12 @@ with cd(wd):
                 only_geo=True
             )
             Session.tweets.tweets_coding_status()
+
+    if watson:
+        Session.get_nlu_data(sample_size=n_watson, randomize=True)
+        report_writer = ReportWriter(Session)
+        report_writer.write_report_nlu("watson_report.csv")
+
     if report:
         Session.tweets.export_geotagged_tweets("geotagged_tweets.json")
         reportwriter = ReportWriter(Session)

@@ -460,3 +460,11 @@ def rehydrate_tweets(id_list, api):
             output.update({tweet.id_str: tweet})
     logger.info("Made {:} API calls".format(api_calls))
     return output
+
+def read_rscript_output(id_file):
+    """Get IDs of tweets classified as relevant by keyword_classify.R
+    Assumes a .csv file with one column and one column header"""
+
+    with open(id_file) as f:
+        ids = f.read().replace('"', '').splitlines()
+    return ids[1::]

@@ -48,6 +48,11 @@ class ReportWriter(object):
         tweets = self.tweets.as_list(only_geo=True)
         return self.make_table(tweets)
 
+    @property
+    def table_nlu(self):
+        tweets=self.tweets.as_list(coded_for="nlu")
+        return self.make_table(tweets)
+
     def country_counts(self, min_count=5):
         table = self.table
         counts = table.country.value_counts()
@@ -103,6 +108,8 @@ class ReportWriter(object):
             ("text", "text"),
             ("hashtags", "hashtags"),
             ("relevance", "is_relevant"),
+            ('doc_sentiment_score', 'doc_sentiment_score'),
+            ('doc_sentiment_lab', 'doc_sentiment_lab')
         )
         column_order = [column_getter[0]
                         for column_getter
@@ -212,6 +219,24 @@ class ReportWriter(object):
             assert isinstance(tweet, PrepTweet)
             irrelevant_words.update(tweet.text.split())
         return None
+
+    def write_report_nlu(self, path, fmt='csv'):
+        """
+        TODO write a make_report(self,var) method, this is not DRY at all.
+        :param path:
+        :param fmt:
+        :return:
+        """
+
+        report = self.table_nlu
+        if fmt == 'csv':
+            report.to_csv(path)
+        elif fmt == "excel" or fmt == "xls":
+            report.to_excel(path)
+        else:
+            raise IOError("{:} is not a valid "
+                          "output format for this "
+                          "report.".format(fmt))
 
     def write_report_geo(self, path, fmt='csv'):
         """
