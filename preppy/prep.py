@@ -21,6 +21,7 @@ from preppy.preptweet import PrepTweet
 from preppy.tweet_list import TweetList
 from preppy.watson import NLU
 from watson_developer_cloud.natural_language_understanding_v1 import Features, SentimentOptions
+from watson_developer_cloud.watson_service import WatsonApiException
 
 
 logger = get_logger(__file__)
@@ -224,10 +225,12 @@ class Preppy(object):
         # TODO check if tweet in cities of interest
         # TODO convert print to logging
         tweets = self.tweets.get_tweets_for_watson(sample_size, randomize)
-
         features = Features(sentiment=SentimentOptions())
         for tweet in tweets:
-            response = self.nlu.analyze(features=features, text=tweet.text)
+            try:
+                response = self.nlu.analyze(features=features, text=tweet.text)
+            except WatsonApiException:
+                continue
             self.tweets.record_metadata(
                 id_str=tweet.id_str,
                 param='nlu',
