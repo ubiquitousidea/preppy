@@ -41,10 +41,13 @@ def _parse_args():
                         help="Preppy will write a csv report, run keyword_classify.R, and store the results",
                         action="store_true",
                         default=False)
-    parser.add_argument("-test_watson", "--test_watson",
-                        help="Testing watson integration",
+    parser.add_argument("-watson", "--watson",
+                        help="Send tweets through watson",
                         action="store_true",
                         default=False)
+    parser.add_argument("-nwatson", "-n-watson", "--n-watson",
+                        help="Number of tweets to send to Waston (default=200)",
+                        default=200, type=int)
     return parser.parse_args()
 
 
@@ -58,7 +61,8 @@ ntweets = args.ntweets
 updatetweets = args.updatetweets
 noclean = args.noclean
 keyword_classify = args.keyword_classify
-test_watson = args.test_watson
+watson = args.watson
+n_watson = args.nwatson
 
 # Configure logging here
 logger = logging.getLogger('preppy')
@@ -110,8 +114,8 @@ with cd(wd):
             )
             Session.tweets.tweets_coding_status()
 
-    if test_watson:
-        Session.get_nlu_data(sample_size=200, randomize=True)
+    if watson:
+        Session.get_nlu_data(sample_size=n_watson, randomize=True)
         report_writer = ReportWriter(Session)
         report_writer.write_report_nlu("watson_report.csv")
 
