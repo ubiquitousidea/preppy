@@ -145,7 +145,7 @@ class TweetList(object):
         output.sort(key=lambda _tweet: _tweet.id)
         return output
 
-    def get_keyword_relevant(self, sample_size=None, randomize=False):
+    def get_tweets_for_watson(self, sample_size=None, randomize=False):
         """
         Return a list of tweets that keyword_classify.R coded as relevant
         and have not yet been run through watson
@@ -154,7 +154,7 @@ class TweetList(object):
         :return: list of PrepTweet instances
         """
         output = [tweet for tweet in self.tweets.values()
-                  if tweet.keyword_relevant]
+                  if tweet.keyword_relevant and not tweet.has_nlu]
         if randomize:
             shuffle(output)
         if sample_size:
