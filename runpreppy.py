@@ -45,7 +45,7 @@ def _parse_args():
                         help="Send tweets through watson",
                         action="store_true",
                         default=False)
-    parser.add_argument("-nwatson", "-n-watson", "--n-watson",
+    parser.add_argument("-nwatson", "--nwatson",
                         help="Number of tweets to send to Waston (default=200)",
                         default=200, type=int)
     return parser.parse_args()
