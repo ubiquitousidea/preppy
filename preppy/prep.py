@@ -221,7 +221,7 @@ class Preppy(object):
                 )
         # TODO add logging information
 
-    def get_nlu_data(self, sample_size=200, randomize=False):
+    def get_nlu_data(self, sample_size=None, randomize=False):
         # TODO check if tweet in cities of interest
         # TODO convert print to logging
         tweets = self.tweets.get_tweets_for_watson(sample_size, randomize)

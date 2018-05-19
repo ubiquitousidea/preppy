@@ -47,7 +47,7 @@ def _parse_args():
                         default=False)
     parser.add_argument("-nwatson", "--nwatson",
                         help="Number of tweets to send to Waston (default=200)",
-                        default=200, type=int)
+                        default=None, type=int)
     return parser.parse_args()
 
 
@@ -115,7 +115,7 @@ with cd(wd):
             Session.tweets.tweets_coding_status()
 
     if watson:
-        Session.get_nlu_data(sample_size=n_watson, randomize=True)
+        Session.get_nlu_data(sample_size=n_watson, randomize=False)
         report_writer = ReportWriter(Session)
         report_writer.write_report_nlu("watson_report.csv")
 
