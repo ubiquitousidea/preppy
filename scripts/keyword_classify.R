@@ -113,7 +113,7 @@ keyword_search <- function(keywords, prep) {
 }
 
 main <- function(keywords, tweet_report) {
-  prep <- readexcel(tweet_report, col_types = c("text"))
+  prep <- read_excel(tweet_report, col_types = c("text"))
   prep$text <- stringi::stri_enc_toascii(prep$text)
   prep <- keyword_search(keywords, prep)
   prep$keep <- apply(prep[15:ncol(prep)], 1, any)
