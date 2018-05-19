@@ -226,6 +226,7 @@ class Preppy(object):
         # TODO convert print to logging
         tweets = self.tweets.get_tweets_for_watson(sample_size, randomize)
         features = Features(sentiment=SentimentOptions())
+        logger.log(msg="Getting NLU data for %d tweets" % len(tweets))
         for tweet in tweets:
             try:
                 response = self.nlu.analyze(features=features, text=tweet.text)

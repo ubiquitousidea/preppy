@@ -159,6 +159,7 @@ class TweetList(object):
             shuffle(output)
         if sample_size:
             output = output[:sample_size]
+        logger.log(msg="Got %d tweets for watson" % len(output))
         return output
 
     @property
