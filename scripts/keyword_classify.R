@@ -18,7 +18,7 @@
 #    default:
 #    --ids relevant
 
-libary(readxl)
+library(readxl)
 
 keywords = list(
   PrEP = list(
