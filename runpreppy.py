@@ -100,7 +100,7 @@ with cd(wd):
     if keyword_classify:
         reportwriter = ReportWriter(Session)
         reportwriter.write_report_geo("geo_tweet_report.xlsx", fmt='excel')
-        subprocess.call(["Rscript", "./scripts/keyword_classify.R", "geo_tweet_report.xls"])
+        subprocess.call(["Rscript", "./scripts/keyword_classify.R", "geo_tweet_report.xlsx"])
         Session.encode_rscript_results()
 
     if encode:
