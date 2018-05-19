@@ -18,6 +18,8 @@
 #    default:
 #    --ids relevant
 
+libary(readxl)
+
 keywords = list(
   PrEP = list(
     pat = "PrEP",
@@ -111,7 +113,7 @@ keyword_search <- function(keywords, prep) {
 }
 
 main <- function(keywords, tweet_report) {
-  prep <- read.csv(tweet_report, colClasses = c("id_string" = "character"))
+  prep <- readexcel(tweet_report, col_types = c("text"))
   prep$text <- stringi::stri_enc_toascii(prep$text)
   prep <- keyword_search(keywords, prep)
   prep$keep <- apply(prep[15:ncol(prep)], 1, any)
