@@ -231,6 +231,7 @@ class Preppy(object):
             try:
                 response = self.nlu.analyze(features=features, text=tweet.text)
             except WatsonApiException:
+                logger.log(msg="WatsonApiException on tweet %s" % tweet.id_str)
                 continue
             self.tweets.record_metadata(
                 id_str=tweet.id_str,
