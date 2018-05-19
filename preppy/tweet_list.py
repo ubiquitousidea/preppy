@@ -154,7 +154,7 @@ class TweetList(object):
         :return: list of PrepTweet instances
         """
         output = [tweet for tweet in self.tweets.values()
-                  if tweet.keyword_relevant and not tweet.has_nlu]
+                  if tweet.keyword_relevant and not tweet.has_nlu and tweet.has_geotag]
         if randomize:
             shuffle(output)
         if sample_size:
