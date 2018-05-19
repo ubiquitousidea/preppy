@@ -13,6 +13,7 @@ from contextlib import contextmanager
 MISSING = None
 SESSION_FILE_NAME = "preppy_session.json"
 now = datetime.datetime.now
+
 DT_FORMATS = {
     "TWITTER": "%Y-%m-%d",
     "BACKUPS": "%Y_%m_%d_%H_%M_%S_%f"
