@@ -14,14 +14,14 @@ from preppy.misc import (
     get_twitter_api, write_json,
     backup_session, make_list, cull_old_files,
     ask_param, MISSING, rehydrate_tweets,
-    get_logger, read_rscript_output
+    get_logger, read_rscript_output, GOOGLE_GEOCODING
 )
 from preppy.metadata import CODE_BOOK, place_of_interest
 from preppy.preptweet import PrepTweet
 from preppy.tweet_list import TweetList
 from preppy.watson import NLU
-from watson_developer_cloud.natural_language_understanding_v1 import Features, SentimentOptions
-from watson_developer_cloud.watson_service import WatsonApiException
+# from watson_developer_cloud.natural_language_understanding_v1 import Features, SentimentOptions
+# from watson_developer_cloud.watson_service import WatsonApiException
 
 
 logger = get_logger(__file__)
@@ -48,7 +48,7 @@ class Preppy(object):
         self.backups_dir = backup_dir
         self.api = get_twitter_api(config_file)
         self.placeinfo = PlaceInfo.from_json(fname=place_info, config_file=config_file)
-        self.nlu = NLU(config_file)
+        self.nlu = None # NLU(config_file)
 
     @property
     def as_dict(self):
@@ -177,18 +177,29 @@ class Preppy(object):
         n = 0
         for tweet in self.tweets.tweets.values():
             assert isinstance(tweet, PrepTweet)
-            place_name = tweet.user_place
-            if place_name is None or not place_of_interest(place_name):
+            user_place = tweet.user_place
+            place_name = place_of_interest(user_place)  # place_name \in {False} U {cities of interest}
+            if user_place is None or place_name is False:
                 continue
-            coords = self.placeinfo.get_coordinates(place_name)
+            coords = self.placeinfo.get_coordinates(user_place)
+            msg = "Place Name: {}".format(user_place)
             if coords:
-                logger.info("Place Name: {}, Coordinates {}".format(place_name, coords))
+                msg += ", Coordinates {}".format(coords)
                 tweet.metadata.record(
                     param="user_place_coordinates",
-                    user_id="google_geocoding",
+                    user_id=GOOGLE_GEOCODING,
                     value=coords
                 )
-                n += 1
+            if place_name:
+                # there is some degree of error here which is introduced in place_of_interest() function call
+                msg += ", City {}".format(place_name)
+                tweet.metadata.record(
+                    param="user_city",
+                    user_id=GOOGLE_GEOCODING,
+                    value=place_name
+                )
+            n += 1
+            logger.info(msg)
             if n >= nmax:
                 break
         logger.info("Successfully encoded {} user place coordinates".format(n))

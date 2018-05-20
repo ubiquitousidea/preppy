@@ -314,6 +314,20 @@ class PrepTweet(object):
 
     @property
     @silence_errors_return_nothing
+    def city(self):
+        """
+        Return the city associated with this tweet.
+
+        :return:
+        """
+        # TODO: add alternate datasource (userplace->google->city)
+        # need to re run the place info encoding to add the city
+        # also need to standardize the attribute list for the metadata (fields declared in too many places)
+        return self.status.place["full_name"].strip(r",[A-Z ]")
+
+
+    @property
+    @silence_errors_return_nothing
     def region(self):
         """
         Get the region of the US a tweet originated from

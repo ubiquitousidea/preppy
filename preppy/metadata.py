@@ -19,12 +19,19 @@ def place_of_interest(place_name):
         (possibly from twitter user place attribute)
     :return: BoolType
     """
+    if place_name is None:
+        return False
     for city, state in AIDSVU_CITIES:
-        matches = re.search(pattern=city, string=place_name)
-        if matches:
-            return True
-        else:
-            continue
+        # May want to add some better logic here to reduce frequency of false matches
+        try:
+            matches = re.search(pattern=city, string=place_name)
+            if matches:
+                return city  # I want to know which city it matched
+            else:
+                continue
+        except TypeError as e:
+            logger.error("city: {}, state: {}, place_name: {}".format(city, state, place_name))
+            logger.error(e)
     return False
 
 
@@ -55,13 +62,15 @@ class MetaData(object):
         :param value: the value that they coded
         :return: NoneType
         """
-        param_dict = getattr(self, param.lower())
-        param_dict.update(
-            {
-                user_id: value
-            }
-        )
-        setattr(self, param.lower(), param_dict)
+        param = param.lower()
+        if not hasattr(self, param):
+            setattr(self, param, {})
+
+        param_dict = getattr(self, param)
+
+        param_dict.update({user_id: value})
+
+        setattr(self, param, param_dict)
 
     def lookup(self, param):
         """

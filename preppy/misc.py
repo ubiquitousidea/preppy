@@ -12,6 +12,7 @@ from contextlib import contextmanager
 
 MISSING = None
 SESSION_FILE_NAME = "preppy_session.json"
+GOOGLE_GEOCODING = "google_geocoding"
 now = datetime.datetime.now
 DT_FORMATS = {
     "TWITTER": "%Y-%m-%d",

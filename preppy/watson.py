@@ -7,8 +7,8 @@ Outputs: appends subdict within a tweet dict called 'nlu',
          contains Watsons NLU output for the tweet. 
 """
 
-import watson_developer_cloud
-from watson_developer_cloud.natural_language_understanding_v1 import Features
+# import watson_developer_cloud
+# from watson_developer_cloud.natural_language_understanding_v1 import Features
 # from watson_developer_cloud.watson_developer_cloud_service import WatsonException
 
 import argparse
