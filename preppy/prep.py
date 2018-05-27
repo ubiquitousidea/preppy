@@ -167,7 +167,7 @@ class Preppy(object):
         len2 = len(self.tweets)
         return len2 - len1
 
-    def encode_user_location(self, nmax=None):
+    def encode_user_location(self, nmax=None, apimax=None):
         """
         For each tweet that has user location attribute, encode location
         coordinates for that tweet using the PlaceInfo class (which uses
@@ -179,7 +179,10 @@ class Preppy(object):
             assert isinstance(tweet, PrepTweet)
             user_place = tweet.user_place
             place_name = place_of_interest(user_place)  # place_name \in {False} U {cities of interest}
-            if user_place is None or place_name is False:
+            if user_place is None \
+                    or place_name is False\
+                    or not tweet.keyword_relevant\
+                    or tweet.has_geotag:
                 continue
             coords = self.placeinfo.get_coordinates(user_place)
             msg = "Place Name: {}".format(user_place)
@@ -201,6 +204,9 @@ class Preppy(object):
             n += 1
             logger.info(msg)
             if n >= nmax:
+                break
+            if self.placeinfo.api_counter >= apimax:
+                logger.info("Hit apimax: %d" % apimax)
                 break
         logger.info("Successfully encoded {} user place coordinates".format(n))
         logger.info("Did so by making {} api calls to Google".format(self.placeinfo.api_counter))
