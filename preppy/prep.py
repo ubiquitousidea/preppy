@@ -234,7 +234,7 @@ class Preppy(object):
 
     def get_nlu_data(self, sample_size=None, randomize=False):
         # TODO check if tweet in cities of interest
-        # TODO convert print to logging
+        # TODO progressbar
         tweets = self.tweets.get_tweets_for_watson(sample_size, randomize)
         features = Features(sentiment=SentimentOptions())
         logger.info(msg="Getting NLU data for %d tweets" % len(tweets))
@@ -244,12 +244,22 @@ class Preppy(object):
             except WatsonApiException:
                 logger.info(msg="WatsonApiException on tweet %s" % tweet.id_str)
                 continue
-            self.tweets.record_metadata(
-                id_str=tweet.id_str,
-                param='nlu',
-                user_id='watson_nlu',
-                value=response
-            )
+            except KeyboardInterrupt:
+                logger.info("User interrupted get_nlu_data call on tweet %s" % tweet.id_str)
+                break
+            except Exception as e:
+                logger.error("Unexpected error in get_nlu_data on tweet %s, aborting function call." % tweet.id_str)
+                logger.error("Unexpected error: %s" % e)
+                break
+            else:
+                self.tweets.record_metadata(
+                    id_str=tweet.id_str,
+                    param='nlu',
+                    user_id='watson_nlu',
+                    value=response
+                )
+            finally:
+                logger.info("Successfully completed Watson calls.")
 
     def rehydrate_tweets(self):
         """
