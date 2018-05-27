@@ -18,8 +18,6 @@
 #    default:
 #    --ids relevant
 
-library(readxl)
-
 keywords = list(
   PrEP = list(
     pat = "PrEP",
@@ -112,9 +110,19 @@ keyword_search <- function(keywords, prep) {
   return(prep)
 }
 
+discard_invalid_rows <- function(prep_frame) { 
+#' Handle tweets that broke the csv format by creating newlines
+#' tried to handle this at the python side to no avail, for now just discard
+#' the tweets. To date its affecting < .01% of tweets. 
+ invalid <- grep("^[0-9]+$", prep_frame$id_string, invert = TRUE)
+ invalid <- c(invalid, invalid - 1)
+ prep_frame <- prep_frame[-invalid, ]
+ return(prep_frame)
+}
+
 main <- function(keywords, tweet_report) {
-  prep <- read_excel(tweet_report, col_types = c("text"))
-  prep <- as.data.frame(prep)
+  prep <- read.csv(tweet_report, colClasses = c("id_string" = "character"))
+  prep <- discard_invalid_rows(prep)
   current_ncol <- ncol(prep)
   new_col_start <- current_ncol + 1
   prep$text <- stringi::stri_enc_toascii(prep$text)
@@ -126,8 +134,8 @@ main <- function(keywords, tweet_report) {
   # geotagged <- keep_frame[keep_frame$latitude != 0, ]
   
   print(paste("Out of", nrow(prep), "tweets:", 
-              nrow(keep_frame), "kept,", 
-              nrow(toss_frame), "tossed"))
+              nrow(keep_frame), "relevant", 
+              nrow(toss_frame), "irrelevant"))
   # print(paste(nrow(geotagged), "geotagged relevant tweets"))
   
   # outtime <- format(Sys.time(), "%Y-%m-%d_%H-%M")

@@ -99,8 +99,8 @@ with cd(wd):
         Session.get_more_tweets(terms)
     if keyword_classify:
         reportwriter = ReportWriter(Session)
-        reportwriter.write_report_geo("geo_tweet_report.xlsx", fmt='excel')
-        subprocess.call(["Rscript", "./scripts/keyword_classify.R", "geo_tweet_report.xlsx"])
+        reportwriter.write_report_all("all_tweet_report.csv", fmt='csv')
+        subprocess.call(["Rscript", "./scripts/keyword_classify.R", "all_tweet_report.csv"])
         Session.encode_rscript_results()
 
     if encode:
