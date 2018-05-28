@@ -1,7 +1,7 @@
 from twitter import Status
 from numpy.random import shuffle
 from preppy.preptweet import PrepTweet
-from preppy.metadata import MetaData, CODE_BOOK
+from preppy.metadata import MetaData, CODE_BOOK, place_of_interest, AIDSVU_CITIES
 from preppy.misc import read_json, write_json, get_logger
 
 
@@ -154,7 +154,9 @@ class TweetList(object):
         :return: list of PrepTweet instances
         """
         output = [tweet for tweet in self.tweets.values()
-                  if tweet.keyword_relevant and not tweet.has_nlu and tweet.has_geotag]
+                  if tweet.keyword_relevant
+                  and not tweet.has_nlu
+                  and place_of_interest(tweet.city)]
         if randomize:
             shuffle(output)
         if sample_size:

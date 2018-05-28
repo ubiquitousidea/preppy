@@ -20,8 +20,8 @@ from preppy.metadata import CODE_BOOK, place_of_interest
 from preppy.preptweet import PrepTweet
 from preppy.tweet_list import TweetList
 from preppy.watson import NLU
-# from watson_developer_cloud.natural_language_understanding_v1 import Features, SentimentOptions
-# from watson_developer_cloud.watson_service import WatsonApiException
+from watson_developer_cloud.natural_language_understanding_v1 import Features, SentimentOptions
+from watson_developer_cloud.watson_service import WatsonApiException
 
 
 logger = get_logger(__file__)
