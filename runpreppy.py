@@ -25,7 +25,7 @@ def _parse_args():
                         default=False)
     parser.add_argument("-ntweets", "--ntweets", "-ntweet", "--ntweet",
                         help="How many tweets? can be used for -encode",
-                        default=0, type=int)
+                        default=None, type=int)
     parser.add_argument("-google_max",
                         help="How many google api calls? can be used for -encode",
                         default=0, type=int)
