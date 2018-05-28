@@ -48,7 +48,7 @@ class Preppy(object):
         self.backups_dir = backup_dir
         self.api = get_twitter_api(config_file)
         self.placeinfo = PlaceInfo.from_json(fname=place_info, config_file=config_file)
-        self.nlu = None # NLU(config_file)
+        self.nlu = NLU(config_file)
 
     @property
     def as_dict(self):
@@ -267,7 +267,7 @@ class Preppy(object):
                 )
                 n += 1
 
-        logger.info("Successfully got NLU data for %d tweets.")
+        logger.info("Successfully got NLU data for %d tweets." % n)
 
     def rehydrate_tweets(self):
         """
