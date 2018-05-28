@@ -40,6 +40,7 @@ class PrepTweet(object):
             self.status = status
         elif isinstance(status, dict):
             self.status = Status(**status)
+            self.status = Status(**status)
 
         if metadata is None:
             self.metadata = MetaData()
@@ -313,17 +314,23 @@ class PrepTweet(object):
         return state_code
 
     @property
-    @silence_errors_return_nothing
     def city(self):
         """
         Return the city associated with this tweet.
 
-        :return:
+        :return: str
         """
-        # TODO: add alternate datasource (userplace->google->city)
-        # need to re run the place info encoding to add the city
-        # also need to standardize the attribute list for the metadata (fields declared in too many places)
-        return self.status.place["full_name"].strip(r",[A-Z ]")
+
+        try:
+            city = self.status.place["full_name"].strip(r",[A-Z ]")
+        except TypeError:
+            city = None
+        if not city:
+            try:
+                city = self.metadata.as_dict.get("user_city").get("google_geocoding")
+            except (TypeError, AttributeError):
+                city = None
+        return city
 
 
     @property

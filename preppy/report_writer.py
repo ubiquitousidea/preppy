@@ -103,6 +103,7 @@ class ReportWriter(object):
             ("country", "country"),
             ("longitude", "longitude"),
             ("latitude", "latitude"),
+            ("city", "city"),
             ("state", "state"),
             ("us_region", "region"),
             ("text", "text"),

@@ -25,6 +25,9 @@ def _parse_args():
                         default=False)
     parser.add_argument("-ntweets", "--ntweets", "-ntweet", "--ntweet",
                         help="How many tweets? can be used for -encode",
+                        default=None, type=int)
+    parser.add_argument("-google_max",
+                        help="How many google api calls? can be used for -encode",
                         default=0, type=int)
     parser.add_argument("-updatetweets",
                         action="store_true",
@@ -58,6 +61,7 @@ encode = args.encode
 debug = args.debug
 report = args.report
 ntweets = args.ntweets
+google_max = args.google_max
 updatetweets = args.updatetweets
 noclean = args.noclean
 keyword_classify = args.keyword_classify
@@ -105,7 +109,7 @@ with cd(wd):
 
     if encode:
         if encode == "user_place":
-            Session.encode_user_location(nmax=ntweets)
+            Session.encode_user_location(nmax=ntweets, apimax=google_max)
         else:
             Session.encode_variable(
                 variable_name=encode,

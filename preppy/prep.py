@@ -20,8 +20,8 @@ from preppy.metadata import CODE_BOOK, place_of_interest
 from preppy.preptweet import PrepTweet
 from preppy.tweet_list import TweetList
 from preppy.watson import NLU
-# from watson_developer_cloud.natural_language_understanding_v1 import Features, SentimentOptions
-# from watson_developer_cloud.watson_service import WatsonApiException
+from watson_developer_cloud.natural_language_understanding_v1 import Features, SentimentOptions
+from watson_developer_cloud.watson_service import WatsonApiException
 
 
 logger = get_logger(__file__)
@@ -48,7 +48,7 @@ class Preppy(object):
         self.backups_dir = backup_dir
         self.api = get_twitter_api(config_file)
         self.placeinfo = PlaceInfo.from_json(fname=place_info, config_file=config_file)
-        self.nlu = None # NLU(config_file)
+        self.nlu = NLU(config_file)
 
     @property
     def as_dict(self):
@@ -167,7 +167,7 @@ class Preppy(object):
         len2 = len(self.tweets)
         return len2 - len1
 
-    def encode_user_location(self, nmax=None):
+    def encode_user_location(self, nmax=None, apimax=None):
         """
         For each tweet that has user location attribute, encode location
         coordinates for that tweet using the PlaceInfo class (which uses
@@ -179,7 +179,10 @@ class Preppy(object):
             assert isinstance(tweet, PrepTweet)
             user_place = tweet.user_place
             place_name = place_of_interest(user_place)  # place_name \in {False} U {cities of interest}
-            if user_place is None or place_name is False:
+            if user_place is None \
+                    or place_name is False\
+                    or not tweet.keyword_relevant\
+                    or tweet.has_geotag:
                 continue
             coords = self.placeinfo.get_coordinates(user_place)
             msg = "Place Name: {}".format(user_place)
@@ -201,6 +204,9 @@ class Preppy(object):
             n += 1
             logger.info(msg)
             if n >= nmax:
+                break
+            if self.placeinfo.api_counter >= apimax:
+                logger.info("Hit apimax: %d" % apimax)
                 break
         logger.info("Successfully encoded {} user place coordinates".format(n))
         logger.info("Did so by making {} api calls to Google".format(self.placeinfo.api_counter))
@@ -238,6 +244,7 @@ class Preppy(object):
         tweets = self.tweets.get_tweets_for_watson(sample_size, randomize)
         features = Features(sentiment=SentimentOptions())
         logger.info(msg="Getting NLU data for %d tweets" % len(tweets))
+        n = 0
         for tweet in tweets:
             try:
                 response = self.nlu.analyze(features=features, text=tweet.text)
@@ -258,8 +265,9 @@ class Preppy(object):
                     user_id='watson_nlu',
                     value=response
                 )
-            finally:
-                logger.info("Successfully completed Watson calls.")
+                n += 1
+
+        logger.info("Successfully got NLU data for %d tweets." % n)
 
     def rehydrate_tweets(self):
         """
