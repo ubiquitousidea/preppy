@@ -326,10 +326,12 @@ class PrepTweet(object):
         try:
             city = self.status.place["full_name"].strip(r",[A-Z ]")
         except TypeError:
-            city = self.metadata.as_dict.get("user_city").get("google_geocoding")
-        else:
-            if not city:
+            city = None
+        if not city:
+            try:
                 city = self.metadata.as_dict.get("user_city").get("google_geocoding")
+            except (TypeError, AttributeError):
+                city = None
         return city
 
 
