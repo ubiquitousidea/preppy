@@ -320,8 +320,6 @@ class PrepTweet(object):
 
         :return: str
         """
-        # TODO: standardize attribute list for the metadata (fields declared in too many places)
-        # handle errors rather than using that Very Fun Decorator?
 
         try:
             city = self.status.place["full_name"].strip(r",[A-Z ]")

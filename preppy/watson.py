@@ -8,11 +8,6 @@ Outputs: appends subdict within a tweet dict called 'nlu',
 """
 
 import watson_developer_cloud
-# from watson_developer_cloud.natural_language_understanding_v1 import Features
-from watson_developer_cloud.watson_developer_cloud_service import WatsonException
-
-import argparse
-from preppy.misc import (read_json, write_json)
 import json
 
 class Watson(object):
@@ -53,46 +48,4 @@ def read_ids(id_file):
 
     with open(id_file) as f:
         ids = f.read().replace('"', '').splitlines()
-    return ids[1::]
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-session", "--session", required = True)
-    parser.add_argument("-config", "--config", required = True)
-    parser.add_argument("-idfile", "--idfile", required = True)
-    return parser.parse_args()
-
-
-def main():
-    """Procedural code remains here until integrated with preppy application logic"""
-    args = parse_args()
-    session_file = args.session
-    config_file = args.config
-    id_file = args.idfile
-    relevant_ids = read_ids(id_file)
-    tweets = read_json(session_file)
-    nlu = NLU(config_file)
-
-    for k in tweets.keys():
-        if k in relevant_ids:
-            try:
-                tweet_text = tweets[k]['status']['full_text']
-                print("Analyzing tweet %s" % k)
-                tweets[k]['nlu'] = nlu.analyze(tweet_text)
-            except WatsonException:
-                print("WatsonException on %s" % k)
-                tweets[k]['nlu'] = None
-            except KeyError:
-                print("KeyError on tweet %s" % k)
-                tweets[k]['nlu'] = None
-            except:
-                print("Unknown error on tweet %s" % k)
-                break
-
-    # this should really be done by Preppy object
-    write_json(session_file, fn="preppy_session.json")
-
-
-if __name__ == '__main__':
-    main()
+    return ids[1:]
