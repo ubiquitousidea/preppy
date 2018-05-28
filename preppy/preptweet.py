@@ -40,6 +40,7 @@ class PrepTweet(object):
             self.status = status
         elif isinstance(status, dict):
             self.status = Status(**status)
+            self.status = Status(**status)
 
         if metadata is None:
             self.metadata = MetaData()
@@ -313,7 +314,6 @@ class PrepTweet(object):
         return state_code
 
     @property
-    @silence_errors_return_nothing
     def city(self):
         """
         Return the city associated with this tweet.
@@ -322,9 +322,14 @@ class PrepTweet(object):
         """
         # TODO: standardize attribute list for the metadata (fields declared in too many places)
         # handle errors rather than using that Very Fun Decorator?
-        city = self.status.place["full_name"].strip(r",[A-Z ]")
-        if city is None or city is False:
+
+        try:
+            city = self.status.place["full_name"].strip(r",[A-Z ]")
+        except TypeError:
             city = self.metadata.get("user_city")
+        else:
+            if not city:
+                city = self.metadata.get("user_city")
         return city
 
 
