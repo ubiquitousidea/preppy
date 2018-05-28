@@ -244,6 +244,7 @@ class Preppy(object):
         tweets = self.tweets.get_tweets_for_watson(sample_size, randomize)
         features = Features(sentiment=SentimentOptions())
         logger.info(msg="Getting NLU data for %d tweets" % len(tweets))
+        n = 0
         for tweet in tweets:
             try:
                 response = self.nlu.analyze(features=features, text=tweet.text)
@@ -264,8 +265,9 @@ class Preppy(object):
                     user_id='watson_nlu',
                     value=response
                 )
-            finally:
-                logger.info("Successfully completed Watson calls.")
+                n += 1
+
+        logger.info("Successfully got NLU data for %d tweets.")
 
     def rehydrate_tweets(self):
         """
