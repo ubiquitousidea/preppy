@@ -318,12 +318,14 @@ class PrepTweet(object):
         """
         Return the city associated with this tweet.
 
-        :return:
+        :return: str
         """
-        # TODO: add alternate datasource (userplace->google->city)
-        # need to re run the place info encoding to add the city
-        # also need to standardize the attribute list for the metadata (fields declared in too many places)
-        return self.status.place["full_name"].strip(r",[A-Z ]")
+        # TODO: standardize attribute list for the metadata (fields declared in too many places)
+        # handle errors rather than using that Very Fun Decorator?
+        city = self.status.place["full_name"].strip(r",[A-Z ]")
+        if city is None or city is False:
+            city = self.metadata.get("user_city")
+        return city
 
 
     @property
