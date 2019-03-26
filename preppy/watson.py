@@ -18,8 +18,10 @@ import json
 class Watson(object):
     """Base class to interface preppy with watson_developer_cloud"""
     def __init__(self, config_file):
+        self.cred_file = config_file
         self.creds = self._parse_config(config_file)
         self.api = self._get_api()
+
     def _parse_config(self, config_file):
         with open(config_file, "r") as f:
             config = json.load(f)
@@ -36,10 +38,14 @@ class NLU(Watson):
         Watson.__init__(self, *args, **kwargs)
 
     def _get_api(self):
-        api = watson_developer_cloud.NaturalLanguageUnderstandingV1(
-            username=self.creds.get('username'),
-            password=self.creds.get('password'),
-            version=self.creds.get('version'))
+        try:
+            api = watson_developer_cloud.NaturalLanguageUnderstandingV1(
+                username=self.creds.get('username'),
+                password=self.creds.get('password'),
+                version=self.creds.get('version'))
+        except:
+            api = watson_developer_cloud.NaturalLanguageUnderstandingV1(version="2018-11-16")
+            api.load_from_credential_file(self.cred_file)
         return api
 
     def analyze(self, *args, **kwargs):
