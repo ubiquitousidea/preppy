@@ -7,25 +7,36 @@ Outputs: appends subdict within a tweet dict called 'nlu',
          contains Watsons NLU output for the tweet. 
 """
 
-import watson_developer_cloud
-from watson_developer_cloud.natural_language_understanding_v1 import Features
+from watson_developer_cloud import NaturalLanguageUnderstandingV1 as nlu
+# from watson_developer_cloud.natural_language_understanding_v1 import Features
 # from watson_developer_cloud.watson_developer_cloud_service import WatsonException
-
 import argparse
 from preppy.misc import (read_json, write_json)
 import json
+import yaml
+
 
 class Watson(object):
     """Base class to interface preppy with watson_developer_cloud"""
     def __init__(self, config_file):
-        self.cred_file = config_file
         self.creds = self._parse_config(config_file)
         self.api = self._get_api()
 
-    def _parse_config(self, config_file):
-        with open(config_file, "r") as f:
-            config = json.load(f)
-            creds = config.get("watson")
+    @staticmethod
+    def _parse_config(config_file):
+        """
+        Parse the configuration file that contains API keys
+        :param config_file: name of the file (json or yaml)
+        :return: dict
+        """
+        try:
+            with open(config_file, "r") as f:
+                config = json.load(f)
+                creds = config.get("watson")
+            return creds
+        except:
+            with open(config_file) as f:
+                creds = yaml.load(f)
             return creds
 
     def _get_api(self):
@@ -39,13 +50,15 @@ class NLU(Watson):
 
     def _get_api(self):
         try:
-            api = watson_developer_cloud.NaturalLanguageUnderstandingV1(
-                username=self.creds.get('username'),
-                password=self.creds.get('password'),
-                version=self.creds.get('version'))
+            api = nlu(username=self.creds.get('username'),
+                      password=self.creds.get('password'),
+                      version=self.creds.get('version'))
         except:
-            api = watson_developer_cloud.NaturalLanguageUnderstandingV1(version="2018-11-16")
-            api.load_from_credential_file(self.cred_file)
+            key = self.creds.get("NATURAL_LANGUAGE_UNDERSTANDING_APIKEY")
+            url = self.creds.get("NATURAL_LANGUAGE_UNDERSTANDING_URL")
+            api = nlu(version="2018-11-16",
+                      iam_apikey=key,
+                      url=url)
         return api
 
     def analyze(self, *args, **kwargs):
