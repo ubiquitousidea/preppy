@@ -8,36 +8,30 @@ Outputs: appends subdict within a tweet dict called 'nlu',
 """
 
 from watson_developer_cloud import NaturalLanguageUnderstandingV1 as nlu
-# from watson_developer_cloud.natural_language_understanding_v1 import Features
-# from watson_developer_cloud.watson_developer_cloud_service import WatsonException
+from watson_developer_cloud.natural_language_understanding_v1 import (
+    Features, KeywordsOptions, EntitiesOptions
+)
 import argparse
 from preppy.misc import (read_json, write_json)
-import json
 import yaml
 
 
 class Watson(object):
     """Base class to interface preppy with watson_developer_cloud"""
     def __init__(self, config_file):
-        self.creds = self._parse_config(config_file)
+        self.creds = self._parse_credentials(config_file)
         self.api = self._get_api()
 
     @staticmethod
-    def _parse_config(config_file):
+    def _parse_credentials(credential_file):
         """
         Parse the configuration file that contains API keys
-        :param config_file: name of the file (json or yaml)
+        :param credential_file: name of the yaml file
         :return: dict
         """
-        try:
-            with open(config_file, "r") as f:
-                config = json.load(f)
-                creds = config.get("watson")
-            return creds
-        except:
-            with open(config_file) as f:
-                creds = yaml.load(f)
-            return creds
+        with open(credential_file) as f:
+            creds = yaml.load(f)
+        return creds
 
     def _get_api(self):
         raise NotImplementedError()
@@ -49,21 +43,17 @@ class NLU(Watson):
         Watson.__init__(self, *args, **kwargs)
 
     def _get_api(self):
-        try:
-            api = nlu(username=self.creds.get('username'),
-                      password=self.creds.get('password'),
-                      version=self.creds.get('version'))
-        except:
-            key = self.creds.get("NATURAL_LANGUAGE_UNDERSTANDING_APIKEY")
-            url = self.creds.get("NATURAL_LANGUAGE_UNDERSTANDING_URL")
-            api = nlu(version="2018-11-16",
-                      iam_apikey=key,
-                      url=url)
+        key = self.creds.get("NATURAL_LANGUAGE_UNDERSTANDING_APIKEY")
+        url = self.creds.get("NATURAL_LANGUAGE_UNDERSTANDING_URL")
+        api = nlu(version="2018-11-16",
+                  iam_apikey=key,
+                  url=url)
         return api
 
-    def analyze(self, *args, **kwargs):
-        result = self.api.analyze(*args, **kwargs)
-        return result
+    def analyze(self, text):
+        ft = Features(entities=EntitiesOptions(),
+                      keywords=KeywordsOptions())
+        return self.api.analyze(text=text, features=ft).get_result()
 
 
 def read_ids(id_file):
@@ -72,7 +62,7 @@ def read_ids(id_file):
 
     with open(id_file) as f:
         ids = f.read().replace('"', '').splitlines()
-    return ids[1::]
+    return ids[1:]
 
 
 def parse_args():
@@ -92,24 +82,11 @@ def main():
     relevant_ids = read_ids(id_file)
     tweets = read_json(session_file)
     nlu = NLU(config_file)
-
     for k in tweets.keys():
         if k in relevant_ids:
-            try:
-                tweet_text = tweets[k]['status']['full_text']
-                print("Analyzing tweet %s" % k)
-                tweets[k]['nlu'] = nlu.analyze(tweet_text)
-            except WatsonException:
-                print("WatsonException on %s" % k)
-                tweets[k]['nlu'] = None
-            except KeyError:
-                print("KeyError on tweet %s" % k)
-                tweets[k]['nlu'] = None
-            except:
-                print("Unknown error on tweet %s" % k)
-                break
-
-    # this should really be done by Preppy object
+            tweet_text = tweets[k]['status']['full_text']
+            print("Analyzing tweet %s" % k)
+            tweets[k]['nlu'] = nlu.analyze(tweet_text)
     write_json(session_file, fn="preppy_session.json")
 
 
