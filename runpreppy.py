@@ -80,13 +80,11 @@ logger.addHandler(sh)
 with cd(wd):
     logger.info("Starting Preppy Session")
     session_file = "preppy_session.json"
-
     Session = Preppy(
         session_file_path=session_file,
         config_file='config.json',
         backup_dir='backups'
     )
-
     logger.info("Opened {:} session file"
                 .format(session_file))
     if updatetweets:
@@ -102,7 +100,6 @@ with cd(wd):
         reportwriter.write_report_all("all_tweet_report.csv", fmt='csv')
         subprocess.call(["Rscript", "./scripts/keyword_classify.R", "all_tweets_report.csv"])
         Session.encode_rscript_results()
-
     if encode:
         if encode == "user_place":
             Session.encode_user_location(nmax=ntweets)
@@ -113,12 +110,12 @@ with cd(wd):
                 only_geo=True
             )
             Session.tweets.tweets_coding_status()
-
     if watson:
         Session.get_nlu_data(sample_size=n_watson, randomize=True)
-        report_writer = ReportWriter(Session)
-        report_writer.write_report_nlu("watson_report.csv")
-
+        n_nlu = Session.tweets.n_nlu
+        logger.info('In total {} tweets have been analyzed for sentiment'.format(n_nlu))
+        # report_writer = ReportWriter(Session)
+        # report_writer.write_report_nlu("watson_report.csv")
     if report:
         Session.tweets.export_geotagged_tweets("geotagged_tweets.json")
         reportwriter = ReportWriter(Session)

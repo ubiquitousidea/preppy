@@ -121,8 +121,7 @@ class MetaData(object):
         :return: BoolType
         """
         result = self.relevance.get("keyword_classify.R")
-        result = bool(result)
-        return result
+        return bool(result)
 
     @property
     def as_dict(self):

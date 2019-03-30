@@ -14,13 +14,21 @@ from watson_developer_cloud.natural_language_understanding_v1 import (
 import argparse
 from preppy.misc import (read_json, write_json)
 import yaml
+from preppy.misc import get_logger
+
+
+logger = get_logger(__file__)
 
 
 class Watson(object):
     """Base class to interface preppy with watson_developer_cloud"""
     def __init__(self, config_file):
         self.creds = self._parse_credentials(config_file)
-        self.api = self._get_api()
+        self.api = None
+        try:
+            self.api = self._get_api()
+        except:
+            logger.warning("Unable to connect to Watson service")
 
     @staticmethod
     def _parse_credentials(credential_file):
@@ -51,7 +59,7 @@ class NLU(Watson):
         return api
 
     def analyze(self, text):
-        ft = Features(entities=EntitiesOptions(),
+        ft = Features(entities=EntitiesOptions(sentiment=True),
                       keywords=KeywordsOptions())
         return self.api.analyze(text=text, features=ft).get_result()
 

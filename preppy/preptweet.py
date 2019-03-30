@@ -394,6 +394,7 @@ class PrepTweet(object):
     @property
     def doc_joy(self):
         return self.doc_emotion.get('joy')
+
     @property
     def doc_sadness(self):
         return self.doc_emotion.get('sadness')

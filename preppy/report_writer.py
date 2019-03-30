@@ -114,7 +114,6 @@ class ReportWriter(object):
         column_order = [column_getter[0]
                         for column_getter
                         in column_getters]
-        # -----------------------------------------------------------
         output_dict = {
             col_name: [
                 getattr(tweet, tweet_property_name)
@@ -123,9 +122,6 @@ class ReportWriter(object):
             for col_name, tweet_property_name
             in column_getters
         }
-        # This dict comprehension with nested list comprehensions is
-        # clever but hard to read. Don't be so obsessively Pythonic.
-        # -----------------------------------------------------------
         output = DataFrame.from_dict(output_dict)
         output = output[column_order]
         return output

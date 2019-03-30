@@ -158,7 +158,10 @@ class TweetList(object):
         if randomize:
             shuffle(output)
         if sample_size:
-            output = output[:sample_size]
+            try:
+                output = output[:sample_size]
+            except IndexError:
+                pass
         return output
 
     @property
@@ -209,6 +212,14 @@ class TweetList(object):
         The number of tweets that are geotagged
         """
         return len(self.geotagged())
+
+    @property
+    def n_nlu(self):
+        """
+        The number of tweets that have run through Watson NLU
+        :return: integer
+        """
+        return len([tw for t_id, tw in self.tweets.items() if tw.has_nlu])
 
     def geotagged(self, tweet_format="Status"):
         """

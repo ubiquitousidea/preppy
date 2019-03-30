@@ -31,7 +31,8 @@ class Preppy(object):
     def __init__(self, session_file_path,
                  backup_dir=None,
                  config_file=None,
-                 place_info="place_info.json"):
+                 place_info="place_info.json",
+                 watson_credential="ibm-cred.yaml"):
         """
         Return an instance of Preppy class
         :param str session_file_path: Name of a session file (optional)
@@ -48,7 +49,7 @@ class Preppy(object):
         self.backups_dir = backup_dir
         self.api = get_twitter_api(config_file)
         self.placeinfo = PlaceInfo.from_json(fname=place_info, config_file=config_file)
-        self.nlu = NLU(config_file)
+        self.nlu = NLU(watson_credential)
 
     @property
     def as_dict(self):
@@ -201,9 +202,6 @@ class Preppy(object):
         and store result in relevance dict inside of MetaData
         :return:
         """
-
-        # this should be much safer.
-        # pass file as a param, check if it exists, is in the right format, etc.
         relevant_ids = read_rscript_output("relevant_ids.csv")
         for ID, tweet in self.tweets.tweets.items():
             assert isinstance(tweet, PrepTweet)
@@ -219,17 +217,15 @@ class Preppy(object):
                     user_id="keyword_classify.R",
                     value=0
                 )
-        # TODO add logging information
 
     def get_nlu_data(self, sample_size=200, randomize=False):
         # TODO check if tweet in cities of interest
         # TODO convert print to logging
-        tweets = self.tweets.get_tweets_for_watson(sample_size, randomize)
-        features = Features(sentiment=SentimentOptions())
-        for tweet in tweets:
+        for tweet in self.tweets.get_tweets_for_watson(sample_size, randomize=randomize):
             try:
-                response = self.nlu.analyze(features=features, text=tweet.text)
-            except WatsonApiException:
+                logger.info("Analyzing Tweet {} for sentiment".format(tweet.id_str))
+                response = self.nlu.analyze(text=tweet.text)
+            except:
                 continue
             self.tweets.record_metadata(
                 id_str=tweet.id_str,
