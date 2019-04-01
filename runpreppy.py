@@ -47,7 +47,10 @@ def _parse_args():
                         default=False)
     parser.add_argument("-nwatson", "--nwatson",
                         help="Number of tweets to send to Waston (default=200)",
-                        default=200, type=int)
+                        default=-1, type=int)
+    parser.add_argument("-watson_unicorn", "--watson_unicorn", '-unicorn', '--unicorn',
+                        help="Extract average sentiment toward all entities and write CSV report",
+                        action="store_true", default=False)
     return parser.parse_args()
 
 
@@ -63,6 +66,7 @@ noclean = args.noclean
 keyword_classify = args.keyword_classify
 watson = args.watson
 n_watson = args.nwatson
+watson_unicorn = args.watson_unicorn
 
 # Configure logging here
 logger = logging.getLogger('preppy')
@@ -113,14 +117,20 @@ with cd(wd):
     if watson:
         n_nlu = Session.tweets.n_nlu
         logger.info('In total {} tweets have been analyzed for sentiment'.format(n_nlu))
-        Session.get_nlu_data(sample_size=n_watson, randomize=True)
+        Session.get_nlu_data(sample_size=n_watson, randomize=True, only_geo=False)
         n_nlu = Session.tweets.n_nlu
         logger.info('In total {} tweets have been analyzed for sentiment'.format(n_nlu))
         d = {tweet.id_str: tweet.as_dict
              for tweet in Session.tweets.as_list(coded_for="nlu")}
         write_json(d, "watson_coded_tweets.json")
-        # report_writer = ReportWriter(Session)
-        # report_writer.write_report_nlu("watson_report.csv")
+        report_writer = ReportWriter(Session)
+        report_writer.write_report_nlu("watson_report.csv")
+    if watson_unicorn:
+        # provided no entity argument will cause
+        # this method to extract average sentiment toward all entities present
+        Session.extract_sentiment_from_nlu()
+        rw = ReportWriter(Session)
+        rw.write_report_nlu("watson_report.csv")
     if report:
         Session.tweets.export_geotagged_tweets("geotagged_tweets.json")
         reportwriter = ReportWriter(Session)

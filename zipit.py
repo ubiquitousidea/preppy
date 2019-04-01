@@ -1,8 +1,9 @@
 import zipfile
+from preppy.misc import date_string
 
 
 fname_in = "preppy_session.json"
-fname_out = "preppy_session.zip"
+fname_out = "preppy_session_{}.zip".format(date_string())
 
 with zipfile.ZipFile(
         fname_out, "w",

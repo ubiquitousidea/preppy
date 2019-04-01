@@ -196,13 +196,13 @@ class PrepTweet(object):
             if that is the only thing available.
         :return: str (may contain nuts, unicode emoticons)
         """
-
         if self.status.full_text:
-            return self.status.full_text
+            output = self.status.full_text
         elif self.status.text:
-            return self.text
+            output = self.text
         else:
-            return MISSING
+            output = MISSING
+        return output.replace("\n", " ")
 
     @property
     @silence_errors_return_nothing
@@ -338,9 +338,6 @@ class PrepTweet(object):
         :return: BoolType (True/False)
         """
         place = self.place
-        # TODO: Add the feature where it considers a tweet to be geotagged
-        # if the user place coordinates have been encoded by PlaceInfo().
-        # user_coords = self.metadata.user_place_coordinates
         return place is not None
 
     @property
@@ -354,12 +351,32 @@ class PrepTweet(object):
     @property
     def sentiment(self):
         """
+        Doesn't work
         :return: dict
         """
-        if self.metadata.as_dict['nlu'].get('watson_nlu') is not None:
-            return self.metadata.as_dict['nlu']['watson_nlu']['sentiment']
-        else:
-            return None
+        try:
+            return self.metadata.sentiment['watson_nlu']
+        except:
+            return MISSING
+        # if self.metadata.as_dict['nlu'].get('watson_nlu') is not None:
+        #     return self.metadata.as_dict['nlu']['watson_nlu']['sentiment']
+        # else:
+        #     return None
+
+    def sentiment_towards(self, entity='Truvada'):
+        """
+
+        :param entity:
+        :return:
+        """
+        sentiment = {}
+        for _entity in self.metadata.nlu.get("entities"):
+            if _entity.get("text") == entity:
+                try:
+                    sentiment = _entity.get("sentiment").get("score")
+                except:
+                    pass
+        return sentiment
 
     @property
     def doc_sentiment_score(self):

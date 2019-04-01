@@ -15,6 +15,7 @@ import argparse
 from preppy.misc import (read_json, write_json)
 import yaml
 from preppy.misc import get_logger
+from re import search
 
 
 logger = get_logger(__file__)
@@ -29,6 +30,7 @@ class Watson(object):
             self.api = self._get_api()
         except:
             logger.warning("Unable to connect to Watson service")
+            raise
 
     @staticmethod
     def _parse_credentials(credential_file):
@@ -61,7 +63,8 @@ class NLU(Watson):
     def analyze(self, text):
         ft = Features(entities=EntitiesOptions(sentiment=True),
                       keywords=KeywordsOptions())
-        return self.api.analyze(text=text, features=ft).get_result()
+        result = self.api.analyze(text=text, features=ft).get_result()
+        return result
 
 
 def read_ids(id_file):

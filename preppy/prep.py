@@ -22,6 +22,7 @@ from preppy.tweet_list import TweetList
 from preppy.watson import NLU
 from watson_developer_cloud.natural_language_understanding_v1 import Features, SentimentOptions
 from watson_developer_cloud.watson_service import WatsonApiException
+import numpy as np
 
 
 logger = get_logger(__file__)
@@ -218,20 +219,70 @@ class Preppy(object):
                     value=0
                 )
 
-    def get_nlu_data(self, sample_size=200, randomize=False):
-        # TODO check if tweet in cities of interest
-        # TODO convert print to logging
-        for tweet in self.tweets.get_tweets_for_watson(sample_size, randomize=randomize):
+    def get_nlu_data(self,
+                     sample_size=200,
+                     randomize=False,
+                     entity="truvada",
+                     only_geo=True):
+        """
+        Get sentiment analysis from Watson
+        :param int sample_size: how many tweets
+        :param bool randomize: randomly select them?
+        :param str entity: store sentiment variable about which entity
+        :param bool only_geo: if True, only Watsonize the geotagged tweeteroos.
+        :return: None
+        """
+        for tweet in self.tweets.get_tweets_for_watson(
+                sample_size=sample_size,
+                randomize=randomize,
+                only_geo=only_geo):
             try:
                 logger.info("Analyzing Tweet {} for sentiment".format(tweet.id_str))
-                response = self.nlu.analyze(text=tweet.text)
+                result = self.nlu.analyze(text=tweet.text)
+                sentiment = {}
+                for _entity in result.get("entities"):
+                    if _entity.get("text") == entity:
+                        sentiment = _entity.get("sentiment").get("score")
+                self.tweets.record_metadata(
+                    id_str=tweet.id_str,
+                    param='nlu',
+                    user_id='watson_nlu',
+                    value=result
+                )
+                self.tweets.record_metadata(
+                    id_str=tweet.id_str,
+                    param="sentiment",
+                    user_id="watson_nlu",
+                    value=sentiment
+                )
             except:
                 continue
+
+    def extract_sentiment_from_nlu(self, entity=None):
+        """
+        For each tweet with NLU dict (watson response)
+        extract sentiment toward entity of interest
+        store the sentiment score in tweet.metadata.sentiment
+        :param str entity: name of the entity. If None, take an average of all sentiment scores.
+        :return: None
+        """
+        for _tweet in self.tweets.as_list(coded_for="nlu"):
+            assert isinstance(_tweet, PrepTweet)
+            result = _tweet.metadata.nlu
+            sentiment = {}
+            entities = result.get("entities")
+            if entities is None:
+                continue
+            for _entity in entities:
+                if entity is None or _entity.get("text") == entity:
+                    sentiment[_entity] = _entity.get("sentiment").get("score")
+            if entity is None:
+                sentiment = np.mean(sentiment.values())
             self.tweets.record_metadata(
-                id_str=tweet.id_str,
-                param='nlu',
-                user_id='watson_nlu',
-                value=response
+                id_str=_tweet.id_str,
+                param="sentiment",
+                user_id="watson_nlu",
+                value=sentiment
             )
 
     def rehydrate_tweets(self):

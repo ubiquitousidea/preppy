@@ -108,9 +108,9 @@ class ReportWriter(object):
             ("text", "text"),
             ("hashtags", "hashtags"),
             ("relevance", "is_relevant"),
-            ('doc_sentiment_score', 'doc_sentiment_score'),
-            ('doc_sentiment_lab', 'doc_sentiment_lab')
+            ("truvada_sentiment_score", "sentiment")
         )
+
         column_order = [column_getter[0]
                         for column_getter
                         in column_getters]

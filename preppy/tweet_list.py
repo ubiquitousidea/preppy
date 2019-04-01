@@ -145,19 +145,29 @@ class TweetList(object):
         output.sort(key=lambda _tweet: _tweet.id)
         return output
 
-    def get_tweets_for_watson(self, sample_size=None, randomize=False):
+    def get_tweets_for_watson(self,
+                              sample_size=None,
+                              randomize=False,
+                              only_geo=True):
         """
         Return a list of tweets that keyword_classify.R coded as relevant
         and have not yet been run through watson
         :param sample_size: number of tweets to return
         :param randomize: uses numpy.random.shuffle
+        :param only_geo: bool. if True, only return tweets that are geotagged
         :return: list of PrepTweet instances
         """
-        output = [tweet for tweet in self.tweets.values()
-                  if tweet.keyword_relevant and not tweet.has_nlu]
+        if only_geo:
+            output = [tweet for tweet in self.tweets.values()
+                      if tweet.keyword_relevant and tweet.has_geotag]
+        else:
+            output = [tweet for tweet in self.tweets.values()
+                      if tweet.keyword_relevant]
         if randomize:
             shuffle(output)
-        if sample_size:
+        if sample_size is not None:
+            if sample_size == -1:
+                return output
             try:
                 output = output[:sample_size]
             except IndexError:
